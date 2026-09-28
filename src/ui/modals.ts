@@ -1,6 +1,7 @@
 import confetti from 'canvas-confetti';
-import { BoardSize, Difficulty } from '../types/puzzle';
+import { BoardSize, BOARD_SIZES, Difficulty, CellValue, CellValueType, EdgeClue, EdgeClueType } from '../types/puzzle';
 import { GameState } from '../state/game-state';
+import { Generator } from '../engine/generator';
 import { ICONS } from './icons';
 
 export class ModalManager {
@@ -30,7 +31,7 @@ export class ModalManager {
     let selectedSize: BoardSize = this.state.puzzle.size;
     let selectedDiff: Difficulty = this.state.puzzle.difficulty;
 
-    const sizes: BoardSize[] = [14, 16, 18, 20, 22, 24];
+    const sizes: BoardSize[] = [...BOARD_SIZES];
     const diffs: Difficulty[] = ['Easy', 'Normal', 'Hard', 'Very Hard', 'Insane', 'Nightmare'];
 
     const render = () => {
@@ -116,24 +117,35 @@ export class ModalManager {
     this.container.classList.remove('hidden');
   }
 
-  public openDailyModal(onPlayDaily: () => void): void {
+  public openDailyModal(onPlayDaily: (dateStr: string) => void): void {
     const today = new Date().toISOString().slice(0, 10);
-    const isCompleted = this.state.stats.dailyCompletedDates.includes(today);
 
-    this.content.innerHTML = `
+    // Last 14 days including today
+    const days: string[] = [];
+    for (let i = 13; i >= 0; i--) {
+      const d = new Date(Date.now() - i * 86400000);
+      days.push(d.toISOString().slice(0, 10));
+    }
+
+    let selectedDate = today;
+
+    const render = () => {
+      const cfg = GameState.dailyConfigForDate(selectedDate);
+      const isCompleted = this.state.stats.dailyCompletedDates.includes(selectedDate);
+      this.content.innerHTML = `
       <div class="modal-header">
         <h2 class="modal-title">📅 Daily Puzzle</h2>
         <button class="modal-close-btn" id="modal-close">${ICONS.CLOSE}</button>
       </div>
 
-      <div style="text-align: center; padding: 20px 0;">
+      <div style="text-align: center; padding: 10px 0 20px;">
         <div style="font-size: 3rem; margin-bottom: 8px;">🗓️</div>
-        <h3 style="font-size: 1.3rem; font-weight: 800; margin-bottom: 4px;">Today's Tango² Challenge</h3>
-        <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 20px;">
-          ${today} &bull; 16×16 Normal
+        <h3 style="font-size: 1.3rem; font-weight: 800; margin-bottom: 4px;">Tango² Daily Challenge</h3>
+        <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 16px;">
+          ${selectedDate} &bull; ${cfg.size}×${cfg.size} ${cfg.diff}
         </p>
 
-        <div style="display: flex; justify-content: center; gap: 20px; margin-bottom: 24px;">
+        <div style="display: flex; justify-content: center; gap: 20px; margin-bottom: 16px;">
           <div style="background: var(--bg-surface-elevated); padding: 12px 20px; border-radius: 12px; border: 1px solid var(--border-subtle);">
             <div style="font-size: 1.5rem; font-weight: 800; color: #f59e0b; font-family: var(--font-mono);">${this.state.stats.dailyStreak}</div>
             <div style="font-size: 0.72rem; color: var(--text-dim); font-weight: 700;">DAY STREAK</div>
@@ -146,18 +158,40 @@ export class ModalManager {
           </div>
         </div>
 
+        <div style="display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-bottom: 20px;">
+          ${days.map(d => {
+            const done = this.state.stats.dailyCompletedDates.includes(d);
+            const isSel = d === selectedDate;
+            const dayNum = d.slice(8, 10);
+            return `<button class="daily-day-btn ${isSel ? 'is-active' : ''}" data-date="${d}" title="${d}${done ? ' (completed)' : ''}" style="
+              padding: 8px 2px; border-radius: 10px; font-size: 0.78rem; font-weight: 700; cursor: pointer;
+              background: ${isSel ? '#6366f1' : 'var(--bg-surface-elevated)'};
+              color: ${isSel ? '#fff' : done ? '#10b981' : 'var(--text-main)'};
+              border: 1px solid ${isSel ? '#6366f1' : 'var(--border-subtle)'};
+            ">${dayNum}${done ? '✓' : ''}</button>`;
+          }).join('')}
+        </div>
+
         <button id="btn-play-daily" class="btn-primary">
-          ${isCompleted ? 'Play Again' : 'Play Today\'s Puzzle'}
+          ${isCompleted ? 'Play Again' : 'Play Daily Puzzle'}
         </button>
       </div>
     `;
 
-    this.content.querySelector('#modal-close')?.addEventListener('click', () => this.close());
-    this.content.querySelector('#btn-play-daily')?.addEventListener('click', () => {
-      this.close();
-      onPlayDaily();
-    });
+      this.content.querySelector('#modal-close')?.addEventListener('click', () => this.close());
+      this.content.querySelectorAll('.daily-day-btn').forEach(el => {
+        el.addEventListener('click', () => {
+          selectedDate = el.getAttribute('data-date') as string;
+          render();
+        });
+      });
+      this.content.querySelector('#btn-play-daily')?.addEventListener('click', () => {
+        this.close();
+        onPlayDaily(selectedDate);
+      });
+    };
 
+    render();
     this.container.classList.remove('hidden');
   }
 
@@ -303,8 +337,8 @@ export class ModalManager {
 
   public openShareModal(): void {
     const puzzle = this.state.puzzle;
-    const timeFormatted = this.formatTime(this.state.elapsedSeconds);
-    const shareText = `🐶 Tango² Logic Puzzle\nSize: ${puzzle.size}×${puzzle.size} | ${puzzle.difficulty}\nID: ${puzzle.id}\nCan you solve it?`;
+    const shareUrl = this.state.getShareUrl();
+    const shareText = `🐶 Tango² Logic Puzzle\nSize: ${puzzle.size}×${puzzle.size} | ${puzzle.difficulty}\nID: ${puzzle.id}\nPlay: ${shareUrl}`;
 
     this.content.innerHTML = `
       <div class="modal-header">
@@ -324,12 +358,29 @@ export class ModalManager {
           </div>
         </div>
 
+        <div style="background: var(--bg-surface-elevated); padding: 14px; border-radius: 12px; border: 1px solid var(--border-subtle); margin-bottom: 16px;">
+          <div style="font-size: 0.7rem; color: var(--text-dim); font-weight: 700; margin-bottom: 4px;">SHARE LINK (REPRODUCES THIS EXACT PUZZLE)</div>
+          <div style="font-family: var(--font-mono); font-size: 0.78rem; color: var(--text-main); word-break: break-all;">
+            ${shareUrl}
+          </div>
+        </div>
+
+        <button id="btn-copy-link" class="btn-primary" style="margin-bottom: 10px; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);">🔗 Copy Share Link</button>
         <button id="btn-copy-share" class="btn-primary" style="margin-bottom: 10px;">📋 Copy Share Card</button>
         <div id="copy-status" style="text-align: center; font-size: 0.85rem; color: #10b981; height: 20px;"></div>
       </div>
     `;
 
     this.content.querySelector('#modal-close')?.addEventListener('click', () => this.close());
+    this.content.querySelector('#btn-copy-link')?.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        const status = this.content.querySelector('#copy-status');
+        if (status) status.textContent = '✓ Link copied to clipboard!';
+      } catch {
+        // fallback
+      }
+    });
     this.content.querySelector('#btn-copy-share')?.addEventListener('click', async () => {
       try {
         await navigator.clipboard.writeText(shareText);
@@ -409,6 +460,172 @@ export class ModalManager {
 
     this.content.querySelector('#btn-victory-close')?.addEventListener('click', () => this.close());
 
+    this.container.classList.remove('hidden');
+  }
+
+  /**
+   * Custom Puzzle builder: paint givens (Dog/Cat) and edge clues (=/×),
+   * then validate (must have exactly one solution) and play.
+   */
+  public openCustomPuzzleModal(onPlay: (puzzle: import('../types/puzzle').PuzzleDefinition) => void): void {
+    let size: BoardSize = 8;
+    let tool: 'dog' | 'cat' | 'erase' | 'equal' | 'cross' = 'dog';
+    let givens: CellValueType[][] = [];
+    let hClues: EdgeClueType[][] = [];
+    let vClues: EdgeClueType[][] = [];
+    let errorMsg = '';
+
+    const resetGrids = () => {
+      givens = Array.from({ length: size }, () => new Array<CellValueType>(size).fill(CellValue.EMPTY));
+      hClues = Array.from({ length: size }, () => new Array<EdgeClueType>(size - 1).fill(EdgeClue.NONE));
+      vClues = Array.from({ length: size - 1 }, () => new Array<EdgeClueType>(size).fill(EdgeClue.NONE));
+    };
+    resetGrids();
+
+    const cellPx = () => (size >= 14 ? 26 : size >= 10 ? 32 : 38);
+
+    const render = () => {
+      const px = cellPx();
+      this.content.innerHTML = `
+      <div class="modal-header">
+        <h2 class="modal-title">🧩 Custom Puzzle</h2>
+        <button class="modal-close-btn" id="modal-close">${ICONS.CLOSE}</button>
+      </div>
+      <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 12px;">
+        Paint Dogs/Cats, then tap the small dots between cells to cycle clues: none → = → ×.
+        Your setup must have <strong>exactly one solution</strong>.
+      </p>
+      <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px;">
+        ${([...BOARD_SIZES] as BoardSize[]).filter(s => s <= 16).map(s => `
+          <button class="daily-day-btn ${s === size ? 'is-active' : ''}" data-csize="${s}" style="
+            padding: 6px 12px; border-radius: 10px; font-size: 0.8rem; font-weight: 700; cursor: pointer;
+            background: ${s === size ? '#6366f1' : 'var(--bg-surface-elevated)'};
+            color: ${s === size ? '#fff' : 'var(--text-main)'};
+            border: 1px solid ${s === size ? '#6366f1' : 'var(--border-subtle)'};">${s}×${s}</button>
+        `).join('')}
+      </div>
+      <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px;">
+        ${(['dog', 'cat', 'erase', 'equal', 'cross'] as const).map(t => `
+          <button data-tool="${t}" style="
+            padding: 8px 12px; border-radius: 10px; font-size: 0.82rem; font-weight: 700; cursor: pointer;
+            background: ${tool === t ? '#10b981' : 'var(--bg-surface-elevated)'};
+            color: ${tool === t ? '#fff' : 'var(--text-main)'};
+            border: 1px solid ${tool === t ? '#10b981' : 'var(--border-subtle)'};">
+            ${t === 'dog' ? '🐶 Dog' : t === 'cat' ? '🐱 Cat' : t === 'erase' ? '⌫ Erase' : t === 'equal' ? '= Equal' : '× Diff'}
+          </button>
+        `).join('')}
+      </div>
+      <div id="custom-grid" style="overflow: auto; max-height: 40vh; border: 1px solid var(--border-subtle); border-radius: 12px; padding: 12px; background: var(--bg-surface-elevated);">
+        <table style="border-collapse: collapse; margin: 0 auto;">
+          ${givens.map((row, r) => `
+            <tr>
+              ${row.map((v, c) => `
+                <td data-cr="${r}" data-cc="${c}" style="
+                  width: ${px}px; height: ${px}px; text-align: center; font-size: ${Math.round(px * 0.55)}px;
+                  border: 1px solid var(--border-subtle); cursor: pointer;
+                  background: ${v === CellValue.EMPTY ? 'transparent' : v === CellValue.DOG ? 'rgba(245,158,11,0.18)' : 'rgba(99,102,241,0.18)'};
+                ">${v === CellValue.DOG ? '🐶' : v === CellValue.CAT ? '🐱' : ''}</td>
+                ${c < size - 1 ? `<td data-hr="${r}" data-hc="${c}" title="clue" style="
+                  width: 18px; text-align: center; font-size: 0.8rem; font-weight: 900; cursor: pointer;
+                  color: ${hClues[r][c] === EdgeClue.EQUAL ? 'var(--clue-equal)' : hClues[r][c] === EdgeClue.CROSS ? 'var(--clue-cross)' : 'var(--text-dim)'};">
+                  ${hClues[r][c] === EdgeClue.EQUAL ? '=' : hClues[r][c] === EdgeClue.CROSS ? '×' : '·'}</td>` : ''}
+              `).join('')}
+            </tr>
+            ${r < size - 1 ? `<tr>${givens[r].map((_, c) => `
+              <td data-vr="${r}" data-vc="${c}" title="clue" style="
+                height: 18px; text-align: center; font-size: 0.8rem; font-weight: 900; cursor: pointer;
+                color: ${vClues[r][c] === EdgeClue.EQUAL ? 'var(--clue-equal)' : vClues[r][c] === EdgeClue.CROSS ? 'var(--clue-cross)' : 'var(--text-dim)'};">
+                ${vClues[r][c] === EdgeClue.EQUAL ? '=' : vClues[r][c] === EdgeClue.CROSS ? '×' : '·'}</td>
+              ${c < size - 1 ? '<td></td>' : ''}`).join('')}</tr>` : ''}
+          `).join('')}
+        </table>
+      </div>
+      ${errorMsg ? `<div style="color: #f87171; font-size: 0.85rem; margin-top: 10px;">⚠ ${errorMsg}</div>` : ''}
+      <div style="display: flex; gap: 10px; margin-top: 14px;">
+        <button id="btn-custom-clear" class="meta-pill" style="flex: 1; justify-content: center; padding: 12px;">Clear</button>
+        <button id="btn-custom-surprise" class="meta-pill" style="flex: 1; justify-content: center; padding: 12px;">🎲 Starter</button>
+        <button id="btn-custom-play" class="btn-primary" style="flex: 2;">Validate & Play</button>
+      </div>
+      `;
+
+      this.content.querySelector('#modal-close')?.addEventListener('click', () => this.close());
+      this.content.querySelectorAll('[data-csize]').forEach(el => {
+        el.addEventListener('click', () => {
+          size = Number(el.getAttribute('data-csize')) as BoardSize;
+          errorMsg = '';
+          resetGrids();
+          render();
+        });
+      });
+      this.content.querySelectorAll('[data-tool]').forEach(el => {
+        el.addEventListener('click', () => {
+          tool = el.getAttribute('data-tool') as typeof tool;
+          render();
+        });
+      });
+      // Cell painting
+      this.content.querySelectorAll('[data-cr]').forEach(el => {
+        el.addEventListener('click', () => {
+          const r = Number(el.getAttribute('data-cr'));
+          const c = Number(el.getAttribute('data-cc'));
+          if (tool === 'dog') givens[r][c] = CellValue.DOG;
+          else if (tool === 'cat') givens[r][c] = CellValue.CAT;
+          else if (tool === 'erase') givens[r][c] = CellValue.EMPTY;
+          else if (tool === 'equal' || tool === 'cross') {
+            // clue tools don't paint cells; cycle cell instead
+            givens[r][c] = givens[r][c] === CellValue.EMPTY ? CellValue.DOG : givens[r][c] === CellValue.DOG ? CellValue.CAT : CellValue.EMPTY;
+          }
+          errorMsg = '';
+          render();
+        });
+      });
+      const cycleClue = (cur: EdgeClueType): EdgeClueType =>
+        cur === EdgeClue.NONE ? EdgeClue.EQUAL : cur === EdgeClue.EQUAL ? EdgeClue.CROSS : EdgeClue.NONE;
+      this.content.querySelectorAll('[data-hr]').forEach(el => {
+        el.addEventListener('click', () => {
+          const r = Number(el.getAttribute('data-hr'));
+          const c = Number(el.getAttribute('data-hc'));
+          hClues[r][c] = cycleClue(hClues[r][c]);
+          errorMsg = '';
+          render();
+        });
+      });
+      this.content.querySelectorAll('[data-vr]').forEach(el => {
+        el.addEventListener('click', () => {
+          const r = Number(el.getAttribute('data-vr'));
+          const c = Number(el.getAttribute('data-vc'));
+          vClues[r][c] = cycleClue(vClues[r][c]);
+          errorMsg = '';
+          render();
+        });
+      });
+      this.content.querySelector('#btn-custom-clear')?.addEventListener('click', () => {
+        resetGrids();
+        errorMsg = '';
+        render();
+      });
+      this.content.querySelector('#btn-custom-surprise')?.addEventListener('click', () => {
+        // Starter: copy givens+clues from a generated puzzle as inspiration
+        const starter = Generator.generatePuzzle(size, 'Easy', `starter-${Date.now()}`);
+        givens = starter.initialGrid.map(row => [...row]);
+        hClues = starter.hClues.map(row => [...row]);
+        vClues = starter.vClues.map(row => [...row]);
+        errorMsg = '';
+        render();
+      });
+      this.content.querySelector('#btn-custom-play')?.addEventListener('click', () => {
+        try {
+          const puzzle = Generator.fromCustom(size, givens, hClues, vClues);
+          this.close();
+          onPlay(puzzle);
+        } catch (e) {
+          errorMsg = e instanceof Error ? e.message : 'Invalid puzzle.';
+          render();
+        }
+      });
+    };
+
+    render();
     this.container.classList.remove('hidden');
   }
 

@@ -2,7 +2,7 @@ import { GameState } from './state/game-state';
 import { ViewportManager } from './ui/viewport';
 import { ModalManager } from './ui/modals';
 import { ICONS } from './ui/icons';
-import { CellValue, CellValueType, EdgeClue, BoardSize, Difficulty } from './types/puzzle';
+import { CellValue, EdgeClue, BoardSize, Difficulty } from './types/puzzle';
 
 // Initialize Game State
 const state = new GameState();
@@ -77,6 +77,9 @@ function formatTime(totalSec: number): string {
 
 // Compute dynamic cell pixel size based on board size
 function getCellPixelSize(size: number): number {
+  if (size <= 8) return 56;
+  if (size <= 10) return 52;
+  if (size <= 12) return 48;
   if (size >= 22) return 34;
   if (size >= 18) return 38;
   if (size >= 16) return 42;
@@ -378,31 +381,41 @@ function setupEvents(): void {
   });
 
   // Header Modals
-  document.getElementById('btn-size-picker')?.addEventListener('click', () => {
-    modals.openNewGameModal((size, diff, seed) => {
-      state.startNewGame(size, diff, seed);
+  const handleNewGameConfirm = (size: BoardSize, diff: Difficulty, seed?: string) => {
+    if (seed && seed.length > 0) {
+      // Seed box accepts full Puzzle IDs (TANGO-16-NORMAL-XXXX) too
+      const parsed = GameState.parseSeedInput(seed, size, diff);
+      state.startNewGame(parsed.size, parsed.diff, parsed.seed);
+      setTimeout(() => viewport.fitToScreen(parsed.size), 50);
+    } else {
+      state.startNewGame(size, diff);
       setTimeout(() => viewport.fitToScreen(size), 50);
-    });
+    }
+  };
+
+  document.getElementById('btn-size-picker')?.addEventListener('click', () => {
+    modals.openNewGameModal(handleNewGameConfirm);
   });
 
   document.getElementById('btn-diff-picker')?.addEventListener('click', () => {
-    modals.openNewGameModal((size, diff, seed) => {
-      state.startNewGame(size, diff, seed);
-      setTimeout(() => viewport.fitToScreen(size), 50);
-    });
+    modals.openNewGameModal(handleNewGameConfirm);
   });
 
   document.getElementById('btn-new-game')?.addEventListener('click', () => {
-    modals.openNewGameModal((size, diff, seed) => {
-      state.startNewGame(size, diff, seed);
-      setTimeout(() => viewport.fitToScreen(size), 50);
+    modals.openNewGameModal(handleNewGameConfirm);
+  });
+
+  document.getElementById('btn-custom-game')?.addEventListener('click', () => {
+    modals.openCustomPuzzleModal((puzzle) => {
+      state.startCustomGame(puzzle);
+      setTimeout(() => viewport.fitToScreen(puzzle.size), 50);
     });
   });
 
   document.getElementById('btn-daily-modal')?.addEventListener('click', () => {
-    modals.openDailyModal(() => {
-      state.startDailyGame();
-      setTimeout(() => viewport.fitToScreen(16), 50);
+    modals.openDailyModal((dateStr) => {
+      state.startDailyGame(dateStr);
+      setTimeout(() => viewport.fitToScreen(state.puzzle.size), 50);
     });
   });
 
@@ -417,8 +430,7 @@ function setupEvents(): void {
   });
 
   document.getElementById('btn-sound-toggle')?.addEventListener('click', () => {
-    state.settings.soundEnabled = !state.settings.soundEnabled;
-    state.saveSettings();
+    state.setSoundEnabled(!state.settings.soundEnabled);
   });
 
   // Global Keyboard Shortcuts
@@ -513,19 +525,25 @@ function setupEvents(): void {
     }
   });
 
-  // Handle URL query parameters for challenge sharing (e.g. ?size=16&diff=Hard&seed=XYZ)
+  // Handle URL query parameters for challenge sharing (e.g. ?size=16&diff=Hard&seed=12345)
   const urlParams = new URLSearchParams(window.location.search);
   const paramDaily = urlParams.get('daily');
+  const paramDate = urlParams.get('date');
   const paramSize = urlParams.get('size');
   const paramDiff = urlParams.get('diff');
   const paramSeed = urlParams.get('seed');
 
   if (paramDaily === 'true') {
-    state.startDailyGame();
+    state.startDailyGame(paramDate || undefined);
   } else if (paramSize && paramDiff) {
     const s = Number(paramSize) as BoardSize;
     const d = paramDiff as Difficulty;
-    state.startNewGame(s, d, paramSeed || undefined);
+    const validSizes = [6, 8, 10, 12, 14, 16, 18, 20, 22, 24];
+    const validDiffs = ['Easy', 'Normal', 'Hard', 'Very Hard', 'Insane', 'Nightmare'];
+    if (validSizes.includes(s) && validDiffs.includes(d)) {
+      const seed = paramSeed && /^\d+$/.test(paramSeed) ? Number(paramSeed) >>> 0 : paramSeed || undefined;
+      state.startNewGame(s, d, seed);
+    }
   }
 }
 
