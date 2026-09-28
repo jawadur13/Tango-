@@ -1,4 +1,4 @@
-import { CellValue, CellValueType, EdgeClue, EdgeClueType, HintResult } from '../types/puzzle';
+import { CellValue, CellValueType, EdgeClue, HintResult } from '../types/puzzle';
 import { FastBoard, popcount } from './fast-board';
 
 export interface DeductionStep {
@@ -130,12 +130,20 @@ export class Solver {
    * 0 -> no solution (unsolvable/contradiction)
    * 1 -> uniquely solvable
    * 2 -> multiple solutions (returns early as soon as 2 are found!)
+   * A node budget guards huge ambiguous boards: when exhausted we report 2
+   * (treat as non-unique) so generation repairs instead of hanging.
    */
-  public static countSolutions(board: FastBoard, maxToFind = 2): { count: number; solution: CellValueType[][] | null } {
+  public static countSolutions(board: FastBoard, maxToFind = 2, maxNodes = 250000): { count: number; solution: CellValueType[][] | null } {
     let solutionsFound = 0;
     let firstSolution: CellValueType[][] | null = null;
+    let nodes = 0;
+    let aborted = false;
 
     function backtrack(b: FastBoard): boolean {
+      if (++nodes > maxNodes) {
+        aborted = true;
+        return true; // stop search; caller treats as ambiguous
+      }
       // Find empty cell with fewest valid candidate values (MRV heuristic)
       let bestR = -1;
       let bestC = -1;
@@ -198,6 +206,13 @@ export class Solver {
 
     const start = board.clone();
     backtrack(start);
+
+    if (aborted && solutionsFound < maxToFind) {
+      // Budget exhausted without proof: never claim uniqueness.
+      // Report ambiguous so generation repairs instead of shipping a puzzle
+      // that might have multiple solutions.
+      return { count: 2, solution: firstSolution };
+    }
 
     return {
       count: solutionsFound,
@@ -785,14 +800,73 @@ export class Solver {
       }
     }
 
+    // Column parity deduction with Cross pairs (symmetric to rows)
+    for (let c = 0; c < N; c++) {
+      const dogsNeeded = half - popcount(b.colDog[c]);
+      const catsNeeded = half - popcount(b.colCat[c]);
+      if (dogsNeeded <= 0 || catsNeeded <= 0) continue;
+
+      const crossPairs: Array<[number, number]> = [];
+      let r = 0;
+      while (r < N - 1) {
+        if (b.getVClue(r, c) === EdgeClue.CROSS && b.get(r, c) === CellValue.EMPTY && b.get(r + 1, c) === CellValue.EMPTY) {
+          crossPairs.push([r, r + 1]);
+          r += 2;
+        } else {
+          r++;
+        }
+      }
+
+      if (crossPairs.length > 0) {
+        const k = crossPairs.length;
+        if (dogsNeeded === k && catsNeeded > k) {
+          const inPair = new Set<number>();
+          crossPairs.forEach(([r1, r2]) => { inPair.add(r1); inPair.add(r2); });
+          for (let row = 0; row < N; row++) {
+            if (b.get(row, c) === CellValue.EMPTY && !inPair.has(row)) {
+              return {
+                r: row, c, val: CellValue.CAT, ruleTier: 3,
+                hintType: 'PARITY_DEDUCTION',
+                title: 'Cross-Pair Counting',
+                explanation: `Column ${c + 1} has ${k} cross (×) pairs, each containing exactly one Dog and one Cat. This accounts for all ${dogsNeeded} remaining Dogs needed in this column. Therefore, cell (${row + 1}, ${c + 1}) must be a Cat 🐱!`,
+                highlightedCells: [{ r: row, c, role: 'primary' }],
+                highlightedLine: { type: 'col', index: c }
+              };
+            }
+          }
+        }
+        if (catsNeeded === k && dogsNeeded > k) {
+          const inPair = new Set<number>();
+          crossPairs.forEach(([r1, r2]) => { inPair.add(r1); inPair.add(r2); });
+          for (let row = 0; row < N; row++) {
+            if (b.get(row, c) === CellValue.EMPTY && !inPair.has(row)) {
+              return {
+                r: row, c, val: CellValue.DOG, ruleTier: 3,
+                hintType: 'PARITY_DEDUCTION',
+                title: 'Cross-Pair Counting',
+                explanation: `Column ${c + 1} has ${k} cross (×) pairs, each containing exactly one Dog and one Cat. This accounts for all ${catsNeeded} remaining Cats needed in this column. Therefore, cell (${row + 1}, ${c + 1}) must be a Dog 🐶!`,
+                highlightedCells: [{ r: row, c, role: 'primary' }],
+                highlightedLine: { type: 'col', index: c }
+              };
+            }
+          }
+        }
+      }
+    }
+
     return null;
   }
 
   private static findForcingDeduction(b: FastBoard): DeductionStep | null {
-    // 1-step lookahead: try hypothesis
+    // 1-step lookahead: try hypothesis.
+    // Capped for large boards to keep generation + hints interactive.
+    const N = b.size;
+    const cap = N >= 20 ? 60 : N >= 14 ? 120 : 400;
+    let examined = 0;
     for (let r = 0; r < b.size; r++) {
       for (let c = 0; c < b.size; c++) {
         if (b.get(r, c) !== CellValue.EMPTY) continue;
+        if (examined++ >= cap) return null;
 
         // Try DOG: if it leads to contradiction, cell must be CAT
         const dogValid = b.canPlace(r, c, CellValue.DOG);
@@ -944,5 +1018,48 @@ export class Solver {
       }
     }
     return count;
+  }
+
+  /**
+   * Measures actual solving complexity of a puzzle (not just board size).
+   * Runs the logical solver at full strength and scores:
+   * score = steps + 12 * maxTier + 25 * forcingSteps
+   * Returns tier histogram so the generator can target difficulty bands.
+   */
+  public static analyzeComplexity(
+    board: FastBoard
+  ): { solved: boolean; maxTier: number; steps: number; forcingSteps: number; score: number; tierCounts: number[] } {
+    const { solveResult } = this.solveLogical(board.clone(), 5);
+    const tierCounts = [0, 0, 0, 0, 0, 0];
+    let forcingSteps = 0;
+    for (const s of solveResult.steps) {
+      tierCounts[s.ruleTier] = (tierCounts[s.ruleTier] ?? 0) + 1;
+      if (s.ruleTier >= 4) forcingSteps++;
+    }
+    const score = solveResult.steps.length + 12 * solveResult.maxTier + 25 * forcingSteps;
+    return {
+      solved: solveResult.solved,
+      maxTier: solveResult.maxTier,
+      steps: solveResult.steps.length,
+      forcingSteps,
+      score,
+      tierCounts
+    };
+  }
+
+  /**
+   * Maps a measured complexity score to the closest difficulty label.
+   * Thresholds scale with board area so large Easy boards stay easy.
+   */
+  public static difficultyForScore(score: number, size: number): import('../types/puzzle').Difficulty {
+    const area = size * size;
+    // Normalize: bigger boards naturally need more steps
+    const n = score / Math.sqrt(area / 196);
+    if (n < 28) return 'Easy';
+    if (n < 48) return 'Normal';
+    if (n < 75) return 'Hard';
+    if (n < 115) return 'Very Hard';
+    if (n < 170) return 'Insane';
+    return 'Nightmare';
   }
 }
