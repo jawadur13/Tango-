@@ -10,6 +10,7 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
-    testTimeout: 25000
+    testTimeout: 25000,
+    exclude: ['node_modules/**', 'dist/**', '.kilo/**']
   }
 });
