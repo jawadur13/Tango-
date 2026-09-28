@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+  <title>Tango² — Dog vs Cat Logic Puzzle Game</title>
+  <meta name="description" content="Tango²: Two animals. One solution. An elegant standalone logic puzzle game featuring Dogs vs Cats, procedural generation, hints, and large board zoom/pan.">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐶</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./src/style.css">
+</head>
+<body class="theme-dark">
+  <div id="app" class="app-layout">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-brand">
+        <div class="brand-logo">
+          <span class="logo-pet dog">🐶</span>
+          <span class="logo-title">Tango<sup class="logo-sup">2</sup></span>
+          <span class="logo-pet cat">🐱</span>
+        </div>
+        <p class="brand-tagline">Two animals. One solution.</p>
+      </div>
+
+      <!-- Game Meta Pills -->
+      <div class="header-meta">
+        <button id="btn-size-picker" class="meta-pill" title="Change Board Size">
+          <span class="pill-label">SIZE</span>
+          <span id="label-size" class="pill-value">14×14</span>
+        </button>
+        <button id="btn-diff-picker" class="meta-pill" title="Change Difficulty">
+          <span class="pill-label">DIFFICULTY</span>
+          <span id="label-diff" class="pill-value diff-normal">Normal</span>
+        </button>
+        <div id="daily-badge" class="meta-pill badge-daily hidden" title="Daily Challenge">
+          <span class="pill-label">DAILY</span>
+          <span id="label-daily-date" class="pill-value">Today</span>
+        </div>
+      </div>
+
+      <!-- Header Actions -->
+      <div class="header-actions">
+        <!-- Timer -->
+        <div class="timer-box">
+          <button id="btn-timer-toggle" class="btn-icon timer-toggle" title="Pause / Resume Timer">
+            <span id="timer-icon">⏸</span>
+          </button>
+          <span id="timer-display" class="timer-digits">00:00</span>
+        </div>
+
+        <button id="btn-theme-toggle" class="btn-icon" title="Toggle Dark/Light Mode" aria-label="Theme">
+          <span id="theme-icon">🌙</span>
+        </button>
+        <button id="btn-sound-toggle" class="btn-icon" title="Toggle Sound" aria-label="Sound">
+          <span id="sound-icon">🔊</span>
+        </button>
+        <button id="btn-daily-modal" class="btn-icon" title="Daily Puzzle Calendar" aria-label="Daily Puzzle">
+          <span id="daily-icon"></span>
+        </button>
+        <button id="btn-stats-modal" class="btn-icon" title="Statistics & Streaks" aria-label="Statistics">
+          <span id="stats-icon"></span>
+        </button>
+        <button id="btn-rules-modal" class="btn-icon" title="How to Play / Rules" aria-label="Rules">
+          <span id="rules-icon"></span>
+        </button>
+        <button id="btn-share-modal" class="btn-icon" title="Share Puzzle / Seed" aria-label="Share">
+          <span id="share-icon"></span>
+        </button>
+        <button id="btn-new-game" class="btn-primary-action" title="Start New Puzzle">
+          <span>✨ New Game</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main class="app-main">
+      <!-- Board Viewport Container -->
+      <div id="viewport-container" class="viewport-container">
+        <!-- Viewport Controls Overlay -->
+        <div class="viewport-controls">
+          <button id="btn-zoom-in" class="btn-viewport" title="Zoom In (+)">
+            <span id="zoom-in-icon"></span>
+          </button>
+          <button id="btn-zoom-reset" class="btn-viewport zoom-level" title="Reset Zoom (100%)">
+            <span id="zoom-level-text">100%</span>
+          </button>
+          <button id="btn-zoom-out" class="btn-viewport" title="Zoom Out (-)">
+            <span id="zoom-out-icon"></span>
+          </button>
+          <button id="btn-fit-view" class="btn-viewport" title="Fit Board to Screen">
+            <span id="fit-view-icon"></span>
+          </button>
+        </div>
+
+        <!-- Puzzle Content (Zoomed & Panned) -->
+        <div id="viewport-content" class="viewport-content">
+          <div id="board-wrapper" class="board-wrapper">
+            <!-- Grid will be dynamically rendered here -->
+          </div>
+        </div>
+
+        <!-- Pause Overlay -->
+        <div id="pause-overlay" class="pause-overlay hidden">
+          <div class="pause-card">
+            <h3>Game Paused</h3>
+            <p>Take a breath! The timer is stopped.</p>
+            <button id="btn-resume-game" class="btn-primary">▶ Resume Game</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hint Explanation Banner -->
+      <div id="hint-banner" class="hint-banner hidden">
+        <div class="hint-banner-content">
+          <div class="hint-header">
+            <span class="hint-icon">💡</span>
+            <strong id="hint-title" class="hint-title">Logical Hint</strong>
+            <span class="hint-tag">Deduction</span>
+          </div>
+          <p id="hint-explanation" class="hint-text"></p>
+        </div>
+        <div class="hint-banner-actions">
+          <button id="btn-apply-hint" class="btn-hint-apply">Apply Move</button>
+          <button id="btn-close-hint" class="btn-icon hint-close" title="Dismiss Hint">✕</button>
+        </div>
+      </div>
+    </main>
+
+    <!-- Bottom Controls Dock -->
+    <footer class="app-dock">
+      <!-- Pet Placement Buttons -->
+      <div class="dock-input-group">
+        <button id="btn-place-dog" class="btn-pet-input btn-dog" title="Place Dog (Key: 1, D)">
+          <div class="btn-pet-icon" id="dock-dog-icon"></div>
+          <span class="btn-pet-text">Dog</span>
+          <kbd class="shortcut-badge">1</kbd>
+        </button>
+
+        <button id="btn-place-cat" class="btn-pet-input btn-cat" title="Place Cat (Key: 2, C)">
+          <div class="btn-pet-icon" id="dock-cat-icon"></div>
+          <span class="btn-pet-text">Cat</span>
+          <kbd class="shortcut-badge">2</kbd>
+        </button>
+
+        <button id="btn-erase" class="btn-pet-input btn-erase" title="Erase Cell (Key: Backspace, Delete, 0)">
+          <div class="btn-pet-icon" id="dock-erase-icon"></div>
+          <span class="btn-pet-text">Erase</span>
+          <kbd class="shortcut-badge">⌫</kbd>
+        </button>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="dock-action-group">
+        <button id="btn-undo" class="btn-dock-action" title="Undo Move (Ctrl+Z)">
+          <span id="undo-icon"></span>
+          <span class="dock-action-label">Undo</span>
+        </button>
+
+        <button id="btn-redo" class="btn-dock-action" title="Redo Move (Ctrl+Y)">
+          <span id="redo-icon"></span>
+          <span class="dock-action-label">Redo</span>
+        </button>
+
+        <button id="btn-hint" class="btn-dock-action btn-hint-action" title="Get Logical Hint (H)">
+          <span id="hint-icon"></span>
+          <span class="dock-action-label">Hint</span>
+        </button>
+
+        <button id="btn-restart" class="btn-dock-action" title="Restart Puzzle">
+          <span id="restart-icon"></span>
+          <span class="dock-action-label">Restart</span>
+        </button>
+
+        <button id="btn-check-toggle" class="btn-dock-action" title="Toggle Live Mistake Checking">
+          <span id="check-icon"></span>
+          <span class="dock-action-label" id="label-check-mistakes">Errors: ON</span>
+        </button>
+      </div>
+    </footer>
+
+    <!-- Modals Container -->
+    <div id="modal-container" class="modal-backdrop hidden">
+      <!-- Modal card will be mounted here -->
+      <div id="modal-content" class="modal-content"></div>
+    </div>
+  </div>
+
+  <script type="module" src="./src/main.ts"></script>
+</body>
+</html>
