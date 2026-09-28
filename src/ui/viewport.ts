@@ -159,13 +159,15 @@ export class ViewportManager {
     const availableW = containerRect.width - 32;
     const availableH = containerRect.height - 32;
 
-    // Base cell size is ~40px on desktop
-    const baseCellSize = boardSize > 18 ? 34 : boardSize > 14 ? 38 : 42;
+    // Base cell size mirrors main.ts getCellPixelSize
+    const baseCellSize = boardSize <= 8 ? 56 : boardSize <= 10 ? 52 : boardSize <= 12 ? 48 : boardSize > 18 ? 34 : boardSize > 14 ? 38 : 42;
     const gridPx = boardSize * baseCellSize + 40; // padding/clues
 
     const scaleW = availableW / gridPx;
     const scaleH = availableH / gridPx;
-    const optimalScale = Math.min(scaleW, scaleH, 1.2);
+    // Small boards may scale up generously; huge boards cap at 1.2
+    const maxScale = boardSize <= 10 ? 2.2 : boardSize <= 14 ? 1.6 : 1.2;
+    const optimalScale = Math.min(scaleW, scaleH, maxScale);
 
     this.scale = Math.max(0.4, optimalScale);
     this.panX = 0;
@@ -173,7 +175,7 @@ export class ViewportManager {
     this.applyTransform();
   }
 
-  public ensureCellVisible(r: number, c: number, boardSize: number, cellSize: number): void {
+  public ensureCellVisible(r: number, c: number, _boardSize: number, cellSize: number): void {
     const containerRect = this.container.getBoundingClientRect();
     const cellCenterX = this.panX + (c + 0.5) * cellSize * this.scale + containerRect.width / 2;
     const cellCenterY = this.panY + (r + 0.5) * cellSize * this.scale + containerRect.height / 2;

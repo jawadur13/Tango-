@@ -8,8 +8,12 @@ export class SoundManager {
   private isMuted: boolean = false;
 
   constructor() {
-    const savedMute = localStorage.getItem('tango2_muted');
-    this.isMuted = savedMute === 'true';
+    try {
+      const savedMute = localStorage.getItem('tango2_muted');
+      this.isMuted = savedMute === 'true';
+    } catch {
+      this.isMuted = false;
+    }
   }
 
   private initCtx(): AudioContext | null {
@@ -27,8 +31,16 @@ export class SoundManager {
   }
 
   public toggleMute(): boolean {
-    this.isMuted = !this.isMuted;
-    localStorage.setItem('tango2_muted', String(this.isMuted));
+    return this.setMuted(!this.isMuted);
+  }
+
+  public setMuted(muted: boolean): boolean {
+    this.isMuted = muted;
+    try {
+      localStorage.setItem('tango2_muted', String(this.isMuted));
+    } catch {
+      // ignore (non-browser env)
+    }
     return this.isMuted;
   }
 

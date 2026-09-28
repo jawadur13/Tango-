@@ -2,6 +2,7 @@ import {
   CellValue,
   CellValueType,
   BoardSize,
+  BOARD_SIZES,
   Difficulty,
   GameMove,
   HintResult,
@@ -66,8 +67,10 @@ export class GameState {
 
   constructor() {
     this.loadSettings();
-    // Default puzzle: 14x14 Normal
-    this.startNewGame(14, 'Normal');
+    // Single source of truth for sound: settings drive the audio manager.
+    sounds.setMuted(!this.settings.soundEnabled);
+    // Default puzzle: 14x14 Normal (not counted in stats until user plays)
+    this.startNewGame(14, 'Normal', undefined, false);
   }
 
   public subscribe(fn: StateListener): () => void {
@@ -83,7 +86,7 @@ export class GameState {
     }
   }
 
-  public startNewGame(size: BoardSize, diff: Difficulty, seedInput?: string | number): void {
+  public startNewGame(size: BoardSize, diff: Difficulty, seedInput?: string | number, countPlayed = true): void {
     this.stopTimer();
     this.isDaily = false;
     this.activeHint = null;
@@ -98,9 +101,21 @@ export class GameState {
     this.currentGrid = this.puzzle.initialGrid.map(row => [...row]);
 
     this.validateCurrentGrid();
+    if (countPlayed) this.recordGameStart();
     this.startTimer();
     this.saveGameSession();
     this.notify();
+  }
+
+  /** Daily puzzle: deterministic per calendar date, size/difficulty rotate. */
+  public static dailyConfigForDate(dateStr: string): { size: BoardSize; diff: Difficulty } {
+    let h = 0;
+    for (let i = 0; i < dateStr.length; i++) h = (Math.imul(h, 31) + dateStr.charCodeAt(i)) | 0;
+    const sizes: BoardSize[] = [...BOARD_SIZES];
+    const diffs: Difficulty[] = ['Easy', 'Normal', 'Hard', 'Very Hard', 'Insane', 'Nightmare'];
+    const size = sizes[Math.abs(h) % sizes.length];
+    const diff = diffs[Math.abs(h >> 3) % diffs.length];
+    return { size, diff };
   }
 
   public startDailyGame(dateStr?: string): void {
@@ -115,15 +130,80 @@ export class GameState {
     this.redoStack = [];
     this.selectedCell = { r: 0, c: 0 };
 
-    // Standard Daily size: 16x16 Normal (or 14x14)
+    // Daily challenge rotates size/difficulty by date but stays reproducible.
+    const { size, diff } = GameState.dailyConfigForDate(today);
     const seed = `DAILY-${today}`;
-    this.puzzle = Generator.generatePuzzle(16, 'Normal', seed);
+    this.puzzle = Generator.generatePuzzle(size, diff, seed);
     this.currentGrid = this.puzzle.initialGrid.map(row => [...row]);
 
     this.validateCurrentGrid();
+    this.recordGameStart();
     this.startTimer();
     this.saveGameSession();
     this.notify();
+  }
+
+  /** Starts a user-built custom puzzle (validated unique before play). */
+  public startCustomGame(puzzle: PuzzleDefinition): void {
+    this.stopTimer();
+    this.isDaily = false;
+    this.activeHint = null;
+    this.isGameComplete = false;
+    this.isPaused = false;
+    this.elapsedSeconds = 0;
+    this.moveHistory = [];
+    this.redoStack = [];
+    this.selectedCell = { r: 0, c: 0 };
+
+    this.puzzle = puzzle;
+    this.currentGrid = puzzle.initialGrid.map(row => [...row]);
+
+    this.validateCurrentGrid();
+    this.recordGameStart();
+    this.startTimer();
+    this.saveGameSession();
+    this.notify();
+  }
+
+  /** Shareable URL that reproduces the exact current puzzle. */
+  public getShareUrl(): string {
+    const base = typeof window !== 'undefined' ? window.location.origin + window.location.pathname : '';
+    const params = new URLSearchParams({
+      size: String(this.puzzle.size),
+      diff: this.puzzle.difficulty,
+      seed: String(this.puzzle.seed)
+    });
+    if (this.isDaily) params.set('daily', 'true');
+    return `${base}?${params.toString()}`;
+  }
+
+  /**
+   * Parses a Seed / Puzzle-ID input box. Accepts:
+   * - Full IDs like TANGO-16-NORMAL-9F3A2B
+   * - Raw numeric seeds, hex seeds, or any free text (hashed deterministically)
+   */
+  public static parseSeedInput(
+    input: string,
+    fallbackSize: BoardSize,
+    fallbackDiff: Difficulty
+  ): { size: BoardSize; diff: Difficulty; seed: number | string } {
+    const trimmed = input.trim();
+    const idMatch = trimmed.match(/^TANGO-(\d+)-([A-Z_]+)-([0-9A-Fa-f]+)$/);
+    if (idMatch) {
+      const sizeNum = Number(idMatch[1]);
+      const validSizes: number[] = [...BOARD_SIZES];
+      const size = (validSizes.includes(sizeNum) ? sizeNum : fallbackSize) as BoardSize;
+      const diffName = idMatch[2].replace(/_/g, ' ');
+      const validDiffs: Difficulty[] = ['Easy', 'Normal', 'Hard', 'Very Hard', 'Insane', 'Nightmare'];
+      const matchDiff = validDiffs.find(d => d.toLowerCase() === diffName.toLowerCase());
+      const diff = (matchDiff ?? fallbackDiff) as Difficulty;
+      const seed = parseInt(idMatch[3], 16) >>> 0;
+      return { size, diff, seed };
+    }
+    if (/^\d+$/.test(trimmed)) {
+      return { size: fallbackSize, diff: fallbackDiff, seed: Number(trimmed) >>> 0 };
+    }
+    return { size: fallbackSize, diff: fallbackDiff, seed: trimmed };
   }
 
   public isCellGiven(r: number, c: number): boolean {
@@ -322,23 +402,7 @@ export class GameState {
   }
 
   // Statistics
-  private recordWin(): void {
-    const diff = this.puzzle.difficulty;
-    const size = this.puzzle.size;
-    const timeMs = this.elapsedSeconds * 1000;
-
-    // By Difficulty
-    const diffStat = this.stats.byDifficulty[diff];
-    diffStat.played++;
-    diffStat.won++;
-    diffStat.totalTimeMs += timeMs;
-    diffStat.currentStreak++;
-    if (diffStat.currentStreak > diffStat.maxStreak) diffStat.maxStreak = diffStat.currentStreak;
-    if (diffStat.bestTimeMs === null || timeMs < diffStat.bestTimeMs) {
-      diffStat.bestTimeMs = timeMs;
-    }
-
-    // By Size
+  private ensureSizeStat(size: number): void {
     if (!this.stats.bySize[size]) {
       this.stats.bySize[size] = {
         played: 0,
@@ -349,8 +413,38 @@ export class GameState {
         maxStreak: 0
       };
     }
-    const sizeStat = this.stats.bySize[size];
+  }
+
+  /** Counts a started game (wins are recorded separately in recordWin). */
+  private recordGameStart(): void {
+    const diffStat = this.stats.byDifficulty[this.puzzle.difficulty];
+    if (diffStat) {
+      diffStat.played++;
+    }
+    this.ensureSizeStat(this.puzzle.size);
+    const sizeStat = this.stats.bySize[this.puzzle.size];
     sizeStat.played++;
+    this.saveStats();
+  }
+
+  private recordWin(): void {
+    const diff = this.puzzle.difficulty;
+    const size = this.puzzle.size;
+    const timeMs = this.elapsedSeconds * 1000;
+
+    // By Difficulty (played was already counted at game start)
+    const diffStat = this.stats.byDifficulty[diff];
+    diffStat.won++;
+    diffStat.totalTimeMs += timeMs;
+    diffStat.currentStreak++;
+    if (diffStat.currentStreak > diffStat.maxStreak) diffStat.maxStreak = diffStat.currentStreak;
+    if (diffStat.bestTimeMs === null || timeMs < diffStat.bestTimeMs) {
+      diffStat.bestTimeMs = timeMs;
+    }
+
+    // By Size
+    this.ensureSizeStat(size);
+    const sizeStat = this.stats.bySize[size];
     sizeStat.won++;
     sizeStat.totalTimeMs += timeMs;
     sizeStat.currentStreak++;
@@ -431,7 +525,14 @@ export class GameState {
     } catch {
       // ignore
     }
+    sounds.setMuted(!this.settings.soundEnabled);
     this.notify();
+  }
+
+  /** Explicit sound toggle that keeps settings + audio manager in sync. */
+  public setSoundEnabled(enabled: boolean): void {
+    this.settings.soundEnabled = enabled;
+    this.saveSettings();
   }
 
   // Persistence

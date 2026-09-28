@@ -18,8 +18,8 @@ export const EdgeClue = {
 
 export type EdgeClueType = typeof EdgeClue[keyof typeof EdgeClue];
 
-export const BOARD_SIZES = [14, 16, 18, 20, 22, 24] as const;
-export type BoardSize = typeof BOARD_SIZES[number] | 6 | 8 | 10 | 12;
+export const BOARD_SIZES = [6, 8, 10, 12, 14, 16, 18, 20, 22, 24] as const;
+export type BoardSize = typeof BOARD_SIZES[number];
 
 export const DIFFICULTIES = ['Easy', 'Normal', 'Hard', 'Very Hard', 'Insane', 'Nightmare'] as const;
 export type Difficulty = typeof DIFFICULTIES[number];
