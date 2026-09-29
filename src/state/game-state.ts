@@ -72,6 +72,7 @@ export class GameState {
   /** First time each conflicting cell entered conflict, keyed "r,c". */
   private conflictSince = new Map<string, number>();
   private errorRevealTimer: ReturnType<typeof setTimeout> | null = null;
+  private saveDebounce: ReturnType<typeof setTimeout> | null = null;
 
   public settings: GameSettings = {
     autoCheckMistakes: true,
@@ -146,7 +147,7 @@ export class GameState {
     this.validateCurrentGrid();
     if (countPlayed) this.recordGameStart();
     this.startTimer();
-    this.saveGameSession();
+    this.queueSave();
     this.notify();
   }
 
@@ -183,7 +184,7 @@ export class GameState {
     this.validateCurrentGrid();
     this.recordGameStart();
     this.startTimer();
-    this.saveGameSession();
+    this.queueSave();
     this.notify();
   }
 
@@ -206,7 +207,7 @@ export class GameState {
     this.validateCurrentGrid();
     this.recordGameStart();
     this.startTimer();
-    this.saveGameSession();
+    this.queueSave();
     this.notify();
   }
 
@@ -301,7 +302,7 @@ export class GameState {
 
     this.validateCurrentGrid();
     this.checkCompletion();
-    this.saveGameSession();
+    this.queueSave();
     this.notify();
   }
 
@@ -328,7 +329,7 @@ export class GameState {
     sounds.playUndo();
     this.stats.totalUndosUsed++;
     this.validateCurrentGrid();
-    this.saveGameSession();
+    this.queueSave();
     this.notify();
   }
 
@@ -342,7 +343,7 @@ export class GameState {
     sounds.playUndo();
     this.validateCurrentGrid();
     this.checkCompletion();
-    this.saveGameSession();
+    this.queueSave();
     this.notify();
   }
 
@@ -358,7 +359,7 @@ export class GameState {
     sounds.playErase();
     this.validateCurrentGrid();
     this.startTimer();
-    this.saveGameSession();
+    this.queueSave();
     this.notify();
   }
 
@@ -642,7 +643,25 @@ export class GameState {
 
   /** Public flush of the current session (e.g. on page hide/unload). */
   public persist(): void {
+    if (this.saveDebounce) {
+      clearTimeout(this.saveDebounce);
+      this.saveDebounce = null;
+    }
     this.saveGameSession();
+  }
+
+  /**
+   * Coalesces session writes. Serialising the whole puzzle (givens, solution,
+   * clues, grid, history) and writing it synchronously on every keystroke
+   * blocks the main thread for no benefit; persist() on page hide guarantees
+   * the latest state is still stored.
+   */
+  private queueSave(): void {
+    if (this.saveDebounce) clearTimeout(this.saveDebounce);
+    this.saveDebounce = setTimeout(() => {
+      this.saveDebounce = null;
+      this.saveGameSession();
+    }, 400);
   }
 
   // Persistence
