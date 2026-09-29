@@ -64,13 +64,18 @@ export class GameState {
 
   public stats: UserStats = this.loadStats();
   private listeners: StateListener[] = [];
+  /** Lightweight listeners fired only on the 1s timer tick (never re-render the whole board). */
+  private tickListeners: StateListener[] = [];
 
   constructor() {
     this.loadSettings();
     // Single source of truth for sound: settings drive the audio manager.
     sounds.setMuted(!this.settings.soundEnabled);
-    // Default puzzle: 14x14 Normal (not counted in stats until user plays)
-    this.startNewGame(14, 'Normal', undefined, false);
+    // Resume an in-progress game across reloads; otherwise start a fresh
+    // default 14x14 Normal (not counted in stats until user plays).
+    if (!this.loadGameSession()) {
+      this.startNewGame(14, 'Normal', undefined, false);
+    }
   }
 
   public subscribe(fn: StateListener): () => void {
@@ -80,8 +85,26 @@ export class GameState {
     };
   }
 
+  /**
+   * Subscribe to the once-per-second timer tick. Used to refresh only the
+   * timer display so the board DOM is never rebuilt just because a second
+   * elapsed (critical for large boards to stay smooth and keep hover state).
+   */
+  public subscribeTick(fn: StateListener): () => void {
+    this.tickListeners.push(fn);
+    return () => {
+      this.tickListeners = this.tickListeners.filter(l => l !== fn);
+    };
+  }
+
   private notify(): void {
     for (const fn of this.listeners) {
+      fn();
+    }
+  }
+
+  private notifyTick(): void {
+    for (const fn of this.tickListeners) {
       fn();
     }
   }
@@ -388,7 +411,11 @@ export class GameState {
     this.timerInterval = setInterval(() => {
       if (!this.isPaused && !this.isGameComplete) {
         this.elapsedSeconds++;
-        this.notify();
+        // Only refresh the timer display — never rebuild the board every second.
+        this.notifyTick();
+        // Periodically persist elapsed time so a reload resumes near the real
+        // clock (moves persist on their own; ticks don't, to avoid churn).
+        if (this.elapsedSeconds % 5 === 0) this.saveGameSession();
       }
     }, 1000);
   }
@@ -535,6 +562,11 @@ export class GameState {
     this.saveSettings();
   }
 
+  /** Public flush of the current session (e.g. on page hide/unload). */
+  public persist(): void {
+    this.saveGameSession();
+  }
+
   // Persistence
   private saveGameSession(): void {
     try {
@@ -549,6 +581,49 @@ export class GameState {
       localStorage.setItem(STORAGE_KEY_SAVED_GAME, JSON.stringify(data));
     } catch {
       // ignore
+    }
+  }
+
+  /**
+   * Restores an in-progress game saved by saveGameSession. Returns true when a
+   * valid, unfinished session was resumed. A finished or malformed session is
+   * ignored so the caller falls back to a fresh puzzle. Does NOT re-count the
+   * game as "played" (it was counted when first started).
+   */
+  private loadGameSession(): boolean {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY_SAVED_GAME);
+      if (!raw) return false;
+      const data = JSON.parse(raw);
+      const p = data?.puzzle as PuzzleDefinition | undefined;
+
+      // Validate the saved puzzle shape before trusting it.
+      if (!p || typeof p.size !== 'number' || !Array.isArray(p.initialGrid) ||
+          !Array.isArray(p.solution) || !Array.isArray(data.currentGrid)) {
+        return false;
+      }
+      if (p.initialGrid.length !== p.size || data.currentGrid.length !== p.size) {
+        return false;
+      }
+      // Don't resume an already-solved board — start fresh instead.
+      if (data.isGameComplete) return false;
+
+      this.puzzle = p;
+      this.currentGrid = (data.currentGrid as CellValueType[][]).map(row => [...row]);
+      this.moveHistory = Array.isArray(data.moveHistory) ? data.moveHistory : [];
+      this.redoStack = [];
+      this.elapsedSeconds = typeof data.elapsedSeconds === 'number' ? data.elapsedSeconds : 0;
+      this.isDaily = !!data.isDaily;
+      this.isGameComplete = false;
+      this.isPaused = false;
+      this.activeHint = null;
+      this.selectedCell = { r: 0, c: 0 };
+
+      this.validateCurrentGrid();
+      this.startTimer();
+      return true;
+    } catch {
+      return false;
     }
   }
 }
