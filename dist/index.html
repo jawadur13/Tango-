@@ -9,8 +9,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
-  <script type="module" crossorigin src="./assets/index-CrgAGdFc.js"></script>
-  <link rel="stylesheet" crossorigin href="./assets/index-BbXJAWJp.css">
+  <script type="module" crossorigin src="./assets/index-CiRHO5zQ.js"></script>
+  <link rel="stylesheet" crossorigin href="./assets/index-DwaM5bwI.css">
 </head>
 <body class="theme-dark">
   <div id="app" class="app-layout">
@@ -45,17 +45,17 @@
       <div class="header-actions">
         <!-- Timer -->
         <div class="timer-box">
-          <button id="btn-timer-toggle" class="btn-icon timer-toggle" title="Pause / Resume Timer">
-            <span id="timer-icon">⏸</span>
+          <button id="btn-timer-toggle" class="btn-icon timer-toggle" title="Pause / Resume Timer" aria-label="Pause timer">
+            <span id="timer-icon" aria-hidden="true"></span>
           </button>
-          <span id="timer-display" class="timer-digits">00:00</span>
+          <span id="timer-display" class="timer-digits" role="timer" aria-label="Elapsed time">00:00</span>
         </div>
 
-        <button id="btn-theme-toggle" class="btn-icon" title="Toggle Dark/Light Mode" aria-label="Theme">
-          <span id="theme-icon">🌙</span>
+        <button id="btn-theme-toggle" class="btn-icon" title="Toggle Dark/Light Mode" aria-label="Switch to light theme">
+          <span id="theme-icon" aria-hidden="true"></span>
         </button>
-        <button id="btn-sound-toggle" class="btn-icon" title="Toggle Sound" aria-label="Sound">
-          <span id="sound-icon">🔊</span>
+        <button id="btn-sound-toggle" class="btn-icon" title="Toggle Sound" aria-label="Mute sound" aria-pressed="true">
+          <span id="sound-icon" aria-hidden="true"></span>
         </button>
         <button id="btn-daily-modal" class="btn-icon" title="Daily Puzzle Calendar" aria-label="Daily Puzzle">
           <span id="daily-icon"></span>
@@ -84,17 +84,17 @@
       <div id="viewport-container" class="viewport-container">
         <!-- Viewport Controls Overlay -->
         <div class="viewport-controls">
-          <button id="btn-zoom-in" class="btn-viewport" title="Zoom In (+)">
-            <span id="zoom-in-icon"></span>
+          <button id="btn-zoom-in" class="btn-viewport" title="Zoom In (+)" aria-label="Zoom in">
+            <span id="zoom-in-icon" aria-hidden="true"></span>
           </button>
-          <button id="btn-zoom-reset" class="btn-viewport zoom-level" title="Reset Zoom (100%)">
+          <button id="btn-zoom-reset" class="btn-viewport zoom-level" title="Reset Zoom (100%)" aria-label="Reset zoom to 100 percent">
             <span id="zoom-level-text">100%</span>
           </button>
-          <button id="btn-zoom-out" class="btn-viewport" title="Zoom Out (-)">
-            <span id="zoom-out-icon"></span>
+          <button id="btn-zoom-out" class="btn-viewport" title="Zoom Out (-)" aria-label="Zoom out">
+            <span id="zoom-out-icon" aria-hidden="true"></span>
           </button>
-          <button id="btn-fit-view" class="btn-viewport" title="Fit Board to Screen">
-            <span id="fit-view-icon"></span>
+          <button id="btn-fit-view" class="btn-viewport" title="Fit Board to Screen" aria-label="Fit board to screen">
+            <span id="fit-view-icon" aria-hidden="true"></span>
           </button>
         </div>
 
@@ -115,8 +115,11 @@
         </div>
       </div>
 
+      <!-- Polite live region: board state, mistakes and completion for screen readers -->
+      <div id="sr-status" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></div>
+
       <!-- Hint Explanation Banner -->
-      <div id="hint-banner" class="hint-banner hidden">
+      <div id="hint-banner" class="hint-banner hidden" role="status" aria-live="polite">
         <div class="hint-banner-content">
           <div class="hint-header">
             <span class="hint-icon">💡</span>
@@ -127,7 +130,7 @@
         </div>
         <div class="hint-banner-actions">
           <button id="btn-apply-hint" class="btn-hint-apply">Apply Move</button>
-          <button id="btn-close-hint" class="btn-icon hint-close" title="Dismiss Hint">✕</button>
+          <button id="btn-close-hint" class="btn-icon hint-close" title="Dismiss Hint" aria-label="Dismiss hint"><span id="close-hint-icon" aria-hidden="true"></span></button>
         </div>
       </div>
     </main>
@@ -177,7 +180,7 @@
           <span class="dock-action-label">Restart</span>
         </button>
 
-        <button id="btn-check-toggle" class="btn-dock-action" title="Toggle Live Mistake Checking">
+        <button id="btn-check-toggle" class="btn-dock-action" title="Toggle Live Mistake Checking" aria-pressed="true">
           <span id="check-icon"></span>
           <span class="dock-action-label" id="label-check-mistakes">Errors: ON</span>
         </button>
