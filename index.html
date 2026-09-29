@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
-  <title>Tango² — Dog vs Cat Logic Puzzle Game</title>
-  <meta name="description" content="Tango²: Two animals. One solution. An elegant standalone logic puzzle game featuring Dogs vs Cats, procedural generation, hints, and large board zoom/pan.">
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐶</text></svg>">
+  <title>Tango² — X vs O Logic Puzzle Game</title>
+  <meta name="description" content="Tango²: Two symbols. One solution. An elegant standalone logic puzzle game featuring Cross (✕) vs Nought (◯), procedural generation, hints, and large board zoom/pan.">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text x='50' y='50' text-anchor='middle' dominant-baseline='central' font-size='70' fill='%23f43f5e'>✕</text><text x='62' y='62' text-anchor='middle' dominant-baseline='central' font-size='55' fill='%230ea5e9'>◯</text></svg>">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
@@ -17,11 +17,11 @@
     <header class="app-header">
       <div class="header-brand">
         <div class="brand-logo">
-          <span class="logo-pet dog">🐶</span>
+          <span class="logo-pet dog">✕</span>
           <span class="logo-title">Tango<sup class="logo-sup">2</sup></span>
-          <span class="logo-pet cat">🐱</span>
+          <span class="logo-pet cat">◯</span>
         </div>
-        <p class="brand-tagline">Two animals. One solution.</p>
+        <p class="brand-tagline">Two symbols. One solution.</p>
       </div>
 
       <!-- Game Meta Pills -->
@@ -135,15 +135,15 @@
     <footer class="app-dock">
       <!-- Pet Placement Buttons -->
       <div class="dock-input-group">
-        <button id="btn-place-dog" class="btn-pet-input btn-dog" title="Place Dog (Key: 1, D)">
+        <button id="btn-place-dog" class="btn-pet-input btn-dog" title="Place Cross ✕ (Key: 1, X)">
           <div class="btn-pet-icon" id="dock-dog-icon"></div>
-          <span class="btn-pet-text">Dog</span>
+          <span class="btn-pet-text">Cross</span>
           <kbd class="shortcut-badge">1</kbd>
         </button>
 
-        <button id="btn-place-cat" class="btn-pet-input btn-cat" title="Place Cat (Key: 2, C)">
+        <button id="btn-place-cat" class="btn-pet-input btn-cat" title="Place Nought ◯ (Key: 2, O)">
           <div class="btn-pet-icon" id="dock-cat-icon"></div>
-          <span class="btn-pet-text">Cat</span>
+          <span class="btn-pet-text">Nought</span>
           <kbd class="shortcut-badge">2</kbd>
         </button>
 

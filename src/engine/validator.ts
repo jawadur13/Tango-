@@ -33,7 +33,7 @@ export class Validator {
         const v2 = currentGrid[r][c + 1];
         const v3 = currentGrid[r][c + 2];
         if (v1 !== CellValue.EMPTY && v1 === v2 && v1 === v3) {
-          const animal = v1 === CellValue.DOG ? 'Dogs 🐶' : 'Cats 🐱';
+          const animal = v1 === CellValue.DOG ? 'Xs' : 'Os';
           const cells = [{ r, c }, { r, c: c + 1 }, { r, c: c + 2 }];
           cells.forEach(pt => addConflict(pt.r, pt.c));
           mistakes.push({
@@ -52,7 +52,7 @@ export class Validator {
         const v2 = currentGrid[r + 1][c];
         const v3 = currentGrid[r + 2][c];
         if (v1 !== CellValue.EMPTY && v1 === v2 && v1 === v3) {
-          const animal = v1 === CellValue.DOG ? 'Dogs 🐶' : 'Cats 🐱';
+          const animal = v1 === CellValue.DOG ? 'Xs' : 'Os';
           const cells = [{ r, c }, { r: r + 1, c }, { r: r + 2, c }];
           cells.forEach(pt => addConflict(pt.r, pt.c));
           mistakes.push({
@@ -82,7 +82,7 @@ export class Validator {
         }
         mistakes.push({
           type: 'ROW_OVERCOUNT',
-          message: `Row ${r + 1} has ${dogs} Dogs (limit is ${half})`,
+          message: `Row ${r + 1} has ${dogs} Xs (limit is ${half})`,
           cells
         });
       }
@@ -96,7 +96,7 @@ export class Validator {
         }
         mistakes.push({
           type: 'ROW_OVERCOUNT',
-          message: `Row ${r + 1} has ${cats} Cats (limit is ${half})`,
+          message: `Row ${r + 1} has ${cats} Os (limit is ${half})`,
           cells
         });
       }
@@ -120,7 +120,7 @@ export class Validator {
         }
         mistakes.push({
           type: 'COL_OVERCOUNT',
-          message: `Column ${c + 1} has ${dogs} Dogs (limit is ${half})`,
+          message: `Column ${c + 1} has ${dogs} Xs (limit is ${half})`,
           cells
         });
       }
@@ -134,7 +134,7 @@ export class Validator {
         }
         mistakes.push({
           type: 'COL_OVERCOUNT',
-          message: `Column ${c + 1} has ${cats} Cats (limit is ${half})`,
+          message: `Column ${c + 1} has ${cats} Os (limit is ${half})`,
           cells
         });
       }

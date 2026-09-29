@@ -263,7 +263,7 @@ export class Solver {
         for (let c = 0; c < currentBoard.size; c++) {
           if (currentBoard.get(r, c) === CellValue.EMPTY) {
             const val = targetSolution[r][c];
-            const name = val === CellValue.DOG ? 'Dog 🐶' : 'Cat 🐱';
+            const name = val === CellValue.DOG ? 'X' : 'O';
             return {
               type: 'FORCING_CHAIN',
               r,
@@ -301,8 +301,8 @@ export class Solver {
           const v2 = b.get(r, c - 1);
           if (v1 !== CellValue.EMPTY && v1 === v2) {
             const opposite = v1 === CellValue.DOG ? CellValue.CAT : CellValue.DOG;
-            const oppName = opposite === CellValue.DOG ? 'Dog 🐶' : 'Cat 🐱';
-            const sameName = v1 === CellValue.DOG ? 'Dogs 🐶' : 'Cats 🐱';
+            const oppName = opposite === CellValue.DOG ? 'X' : 'O';
+            const sameName = v1 === CellValue.DOG ? 'Xs' : 'Os';
             return {
               r, c, val: opposite, ruleTier: 1,
               hintType: 'THREE_IN_A_ROW_AVOID',
@@ -324,8 +324,8 @@ export class Solver {
           const v2 = b.get(r, c + 2);
           if (v1 !== CellValue.EMPTY && v1 === v2) {
             const opposite = v1 === CellValue.DOG ? CellValue.CAT : CellValue.DOG;
-            const oppName = opposite === CellValue.DOG ? 'Dog 🐶' : 'Cat 🐱';
-            const sameName = v1 === CellValue.DOG ? 'Dogs 🐶' : 'Cats 🐱';
+            const oppName = opposite === CellValue.DOG ? 'X' : 'O';
+            const sameName = v1 === CellValue.DOG ? 'Xs' : 'Os';
             return {
               r, c, val: opposite, ruleTier: 1,
               hintType: 'THREE_IN_A_ROW_AVOID',
@@ -347,13 +347,13 @@ export class Solver {
           const v2 = b.get(r, c + 1);
           if (v1 !== CellValue.EMPTY && v1 === v2) {
             const opposite = v1 === CellValue.DOG ? CellValue.CAT : CellValue.DOG;
-            const oppName = opposite === CellValue.DOG ? 'Dog 🐶' : 'Cat 🐱';
-            const sameName = v1 === CellValue.DOG ? 'Dogs 🐶' : 'Cats 🐱';
+            const oppName = opposite === CellValue.DOG ? 'X' : 'O';
+            const sameName = v1 === CellValue.DOG ? 'Xs' : 'Os';
             return {
               r, c, val: opposite, ruleTier: 1,
               hintType: 'THREE_IN_A_ROW_AVOID',
               title: 'Sandwich Rule',
-              explanation: `Cell (${r + 1}, ${c + 1}) is sandwiched between two ${sameName}. It must be a ${oppName} to avoid three consecutive identical animals.`,
+              explanation: `Cell (${r + 1}, ${c + 1}) is sandwiched between two ${sameName}. It must be a ${oppName} to avoid three consecutive identical symbols.`,
               highlightedCells: [
                 { r, c, role: 'primary' },
                 { r, c: c - 1, role: 'secondary' },
@@ -377,8 +377,8 @@ export class Solver {
           const v2 = b.get(r - 1, c);
           if (v1 !== CellValue.EMPTY && v1 === v2) {
             const opposite = v1 === CellValue.DOG ? CellValue.CAT : CellValue.DOG;
-            const oppName = opposite === CellValue.DOG ? 'Dog 🐶' : 'Cat 🐱';
-            const sameName = v1 === CellValue.DOG ? 'Dogs 🐶' : 'Cats 🐱';
+            const oppName = opposite === CellValue.DOG ? 'X' : 'O';
+            const sameName = v1 === CellValue.DOG ? 'Xs' : 'Os';
             return {
               r, c, val: opposite, ruleTier: 1,
               hintType: 'THREE_IN_A_ROW_AVOID',
@@ -400,8 +400,8 @@ export class Solver {
           const v2 = b.get(r + 2, c);
           if (v1 !== CellValue.EMPTY && v1 === v2) {
             const opposite = v1 === CellValue.DOG ? CellValue.CAT : CellValue.DOG;
-            const oppName = opposite === CellValue.DOG ? 'Dog 🐶' : 'Cat 🐱';
-            const sameName = v1 === CellValue.DOG ? 'Dogs 🐶' : 'Cats 🐱';
+            const oppName = opposite === CellValue.DOG ? 'X' : 'O';
+            const sameName = v1 === CellValue.DOG ? 'Xs' : 'Os';
             return {
               r, c, val: opposite, ruleTier: 1,
               hintType: 'THREE_IN_A_ROW_AVOID',
@@ -423,8 +423,8 @@ export class Solver {
           const v2 = b.get(r + 1, c);
           if (v1 !== CellValue.EMPTY && v1 === v2) {
             const opposite = v1 === CellValue.DOG ? CellValue.CAT : CellValue.DOG;
-            const oppName = opposite === CellValue.DOG ? 'Dog 🐶' : 'Cat 🐱';
-            const sameName = v1 === CellValue.DOG ? 'Dogs 🐶' : 'Cats 🐱';
+            const oppName = opposite === CellValue.DOG ? 'X' : 'O';
+            const sameName = v1 === CellValue.DOG ? 'Xs' : 'Os';
             return {
               r, c, val: opposite, ruleTier: 1,
               hintType: 'THREE_IN_A_ROW_AVOID',
@@ -454,7 +454,7 @@ export class Solver {
 
         if (v1 !== CellValue.EMPTY && v2 === CellValue.EMPTY) {
           const val = clue === EdgeClue.EQUAL ? v1 : (v1 === CellValue.DOG ? CellValue.CAT : CellValue.DOG);
-          const valName = val === CellValue.DOG ? 'Dog 🐶' : 'Cat 🐱';
+          const valName = val === CellValue.DOG ? 'X' : 'O';
           const sym = clue === EdgeClue.EQUAL ? '=' : '×';
           const relWord = clue === EdgeClue.EQUAL ? 'equal to' : 'different from';
           return {
@@ -472,7 +472,7 @@ export class Solver {
 
         if (v1 === CellValue.EMPTY && v2 !== CellValue.EMPTY) {
           const val = clue === EdgeClue.EQUAL ? v2 : (v2 === CellValue.DOG ? CellValue.CAT : CellValue.DOG);
-          const valName = val === CellValue.DOG ? 'Dog 🐶' : 'Cat 🐱';
+          const valName = val === CellValue.DOG ? 'X' : 'O';
           const sym = clue === EdgeClue.EQUAL ? '=' : '×';
           const relWord = clue === EdgeClue.EQUAL ? 'equal to' : 'different from';
           return {
@@ -501,7 +501,7 @@ export class Solver {
 
         if (v1 !== CellValue.EMPTY && v2 === CellValue.EMPTY) {
           const val = clue === EdgeClue.EQUAL ? v1 : (v1 === CellValue.DOG ? CellValue.CAT : CellValue.DOG);
-          const valName = val === CellValue.DOG ? 'Dog 🐶' : 'Cat 🐱';
+          const valName = val === CellValue.DOG ? 'X' : 'O';
           const sym = clue === EdgeClue.EQUAL ? '=' : '×';
           const relWord = clue === EdgeClue.EQUAL ? 'equal to' : 'different from';
           return {
@@ -519,7 +519,7 @@ export class Solver {
 
         if (v1 === CellValue.EMPTY && v2 !== CellValue.EMPTY) {
           const val = clue === EdgeClue.EQUAL ? v2 : (v2 === CellValue.DOG ? CellValue.CAT : CellValue.DOG);
-          const valName = val === CellValue.DOG ? 'Dog 🐶' : 'Cat 🐱';
+          const valName = val === CellValue.DOG ? 'X' : 'O';
           const sym = clue === EdgeClue.EQUAL ? '=' : '×';
           const relWord = clue === EdgeClue.EQUAL ? 'equal to' : 'different from';
           return {
@@ -550,7 +550,7 @@ export class Solver {
               r, c, val: CellValue.CAT, ruleTier: 1,
               hintType: 'BALANCE_MAX_REACHED',
               title: 'Row Balance (50/50 Rule)',
-              explanation: `Row ${r + 1} already has its maximum of ${half} Dogs 🐶 (50%). All remaining empty cells in this row must be Cats 🐱.`,
+              explanation: `Row ${r + 1} already has its maximum of ${half} Xs (50%). All remaining empty cells in this row must be Os.`,
               highlightedCells: [{ r, c, role: 'primary' }],
               highlightedLine: { type: 'row', index: r }
             };
@@ -566,7 +566,7 @@ export class Solver {
               r, c, val: CellValue.DOG, ruleTier: 1,
               hintType: 'BALANCE_MAX_REACHED',
               title: 'Row Balance (50/50 Rule)',
-              explanation: `Row ${r + 1} already has its maximum of ${half} Cats 🐱 (50%). All remaining empty cells in this row must be Dogs 🐶.`,
+              explanation: `Row ${r + 1} already has its maximum of ${half} Os (50%). All remaining empty cells in this row must be Xs.`,
               highlightedCells: [{ r, c, role: 'primary' }],
               highlightedLine: { type: 'row', index: r }
             };
@@ -587,7 +587,7 @@ export class Solver {
               r, c, val: CellValue.CAT, ruleTier: 1,
               hintType: 'BALANCE_MAX_REACHED',
               title: 'Column Balance (50/50 Rule)',
-              explanation: `Column ${c + 1} already has its maximum of ${half} Dogs 🐶 (50%). All remaining empty cells in this column must be Cats 🐱.`,
+              explanation: `Column ${c + 1} already has its maximum of ${half} Xs (50%). All remaining empty cells in this column must be Os.`,
               highlightedCells: [{ r, c, role: 'primary' }],
               highlightedLine: { type: 'col', index: c }
             };
@@ -602,7 +602,7 @@ export class Solver {
               r, c, val: CellValue.DOG, ruleTier: 1,
               hintType: 'BALANCE_MAX_REACHED',
               title: 'Column Balance (50/50 Rule)',
-              explanation: `Column ${c + 1} already has its maximum of ${half} Cats 🐱 (50%). All remaining empty cells in this column must be Dogs 🐶.`,
+              explanation: `Column ${c + 1} already has its maximum of ${half} Os (50%). All remaining empty cells in this column must be Xs.`,
               highlightedCells: [{ r, c, role: 'primary' }],
               highlightedLine: { type: 'col', index: c }
             };
@@ -634,8 +634,8 @@ export class Solver {
             const vLeft = b.get(r, c - 1);
             if (vLeft !== CellValue.EMPTY) {
               const forced = vLeft === CellValue.DOG ? CellValue.CAT : CellValue.DOG;
-              const forcedName = forced === CellValue.DOG ? 'Dog 🐶' : 'Cat 🐱';
-              const leftName = vLeft === CellValue.DOG ? 'Dog 🐶' : 'Cat 🐱';
+              const forcedName = forced === CellValue.DOG ? 'X' : 'O';
+              const leftName = vLeft === CellValue.DOG ? 'X' : 'O';
               return {
                 r, c, val: forced, ruleTier: 2,
                 hintType: 'EQUAL_PAIR_SURROUNDING',
@@ -656,8 +656,8 @@ export class Solver {
             const vRight = b.get(r, c + 2);
             if (vRight !== CellValue.EMPTY) {
               const forced = vRight === CellValue.DOG ? CellValue.CAT : CellValue.DOG;
-              const forcedName = forced === CellValue.DOG ? 'Dog 🐶' : 'Cat 🐱';
-              const rightName = vRight === CellValue.DOG ? 'Dog 🐶' : 'Cat 🐱';
+              const forcedName = forced === CellValue.DOG ? 'X' : 'O';
+              const rightName = vRight === CellValue.DOG ? 'X' : 'O';
               return {
                 r, c: c + 1, val: forced, ruleTier: 2,
                 hintType: 'EQUAL_PAIR_SURROUNDING',
@@ -690,8 +690,8 @@ export class Solver {
             const vTop = b.get(r - 1, c);
             if (vTop !== CellValue.EMPTY) {
               const forced = vTop === CellValue.DOG ? CellValue.CAT : CellValue.DOG;
-              const forcedName = forced === CellValue.DOG ? 'Dog 🐶' : 'Cat 🐱';
-              const topName = vTop === CellValue.DOG ? 'Dog 🐶' : 'Cat 🐱';
+              const forcedName = forced === CellValue.DOG ? 'X' : 'O';
+              const topName = vTop === CellValue.DOG ? 'X' : 'O';
               return {
                 r, c, val: forced, ruleTier: 2,
                 hintType: 'EQUAL_PAIR_SURROUNDING',
@@ -712,8 +712,8 @@ export class Solver {
             const vBottom = b.get(r + 2, c);
             if (vBottom !== CellValue.EMPTY) {
               const forced = vBottom === CellValue.DOG ? CellValue.CAT : CellValue.DOG;
-              const forcedName = forced === CellValue.DOG ? 'Dog 🐶' : 'Cat 🐱';
-              const bottomName = vBottom === CellValue.DOG ? 'Dog 🐶' : 'Cat 🐱';
+              const forcedName = forced === CellValue.DOG ? 'X' : 'O';
+              const bottomName = vBottom === CellValue.DOG ? 'X' : 'O';
               return {
                 r: r + 1, c, val: forced, ruleTier: 2,
                 hintType: 'EQUAL_PAIR_SURROUNDING',
@@ -772,7 +772,7 @@ export class Solver {
                 r, c: col, val: CellValue.CAT, ruleTier: 3,
                 hintType: 'PARITY_DEDUCTION',
                 title: 'Cross-Pair Counting',
-                explanation: `Row ${r + 1} has ${k} cross (×) pairs, each containing exactly one Dog and one Cat. This accounts for all ${dogsNeeded} remaining Dogs needed in this row. Therefore, cell (${r + 1}, ${col + 1}) must be a Cat 🐱!`,
+                explanation: `Row ${r + 1} has ${k} cross (×) pairs, each containing exactly one X and one O. This accounts for all ${dogsNeeded} remaining Xs needed in this row. Therefore, cell (${r + 1}, ${col + 1}) must be a O!`,
                 highlightedCells: [{ r, c: col, role: 'primary' }],
                 highlightedLine: { type: 'row', index: r }
               };
@@ -790,7 +790,7 @@ export class Solver {
                 r, c: col, val: CellValue.DOG, ruleTier: 3,
                 hintType: 'PARITY_DEDUCTION',
                 title: 'Cross-Pair Counting',
-                explanation: `Row ${r + 1} has ${k} cross (×) pairs, each containing exactly one Dog and one Cat. This accounts for all ${catsNeeded} remaining Cats needed in this row. Therefore, cell (${r + 1}, ${col + 1}) must be a Dog 🐶!`,
+                explanation: `Row ${r + 1} has ${k} cross (×) pairs, each containing exactly one X and one O. This accounts for all ${catsNeeded} remaining Os needed in this row. Therefore, cell (${r + 1}, ${col + 1}) must be a X!`,
                 highlightedCells: [{ r, c: col, role: 'primary' }],
                 highlightedLine: { type: 'row', index: r }
               };
@@ -828,7 +828,7 @@ export class Solver {
                 r: row, c, val: CellValue.CAT, ruleTier: 3,
                 hintType: 'PARITY_DEDUCTION',
                 title: 'Cross-Pair Counting',
-                explanation: `Column ${c + 1} has ${k} cross (×) pairs, each containing exactly one Dog and one Cat. This accounts for all ${dogsNeeded} remaining Dogs needed in this column. Therefore, cell (${row + 1}, ${c + 1}) must be a Cat 🐱!`,
+                explanation: `Column ${c + 1} has ${k} cross (×) pairs, each containing exactly one X and one O. This accounts for all ${dogsNeeded} remaining Xs needed in this column. Therefore, cell (${row + 1}, ${c + 1}) must be a O!`,
                 highlightedCells: [{ r: row, c, role: 'primary' }],
                 highlightedLine: { type: 'col', index: c }
               };
@@ -844,7 +844,7 @@ export class Solver {
                 r: row, c, val: CellValue.DOG, ruleTier: 3,
                 hintType: 'PARITY_DEDUCTION',
                 title: 'Cross-Pair Counting',
-                explanation: `Column ${c + 1} has ${k} cross (×) pairs, each containing exactly one Dog and one Cat. This accounts for all ${catsNeeded} remaining Cats needed in this column. Therefore, cell (${row + 1}, ${c + 1}) must be a Dog 🐶!`,
+                explanation: `Column ${c + 1} has ${k} cross (×) pairs, each containing exactly one X and one O. This accounts for all ${catsNeeded} remaining Os needed in this column. Therefore, cell (${row + 1}, ${c + 1}) must be a X!`,
                 highlightedCells: [{ r: row, c, role: 'primary' }],
                 highlightedLine: { type: 'col', index: c }
               };
@@ -879,7 +879,7 @@ export class Solver {
               r, c, val: CellValue.CAT, ruleTier: 4,
               hintType: 'CONTRADICTION_AVOID',
               title: 'Hypothesis Contradiction',
-              explanation: `Placing a Dog 🐶 at (${r + 1}, ${c + 1}) leads to an inevitable rule contradiction down the line. Therefore, this cell MUST be a Cat 🐱!`,
+              explanation: `Placing a X at (${r + 1}, ${c + 1}) leads to an inevitable rule contradiction down the line. Therefore, this cell MUST be a O!`,
               highlightedCells: [{ r, c, role: 'primary' }],
               highlightedLine: { type: 'row', index: r }
             };
@@ -897,7 +897,7 @@ export class Solver {
               r, c, val: CellValue.DOG, ruleTier: 4,
               hintType: 'CONTRADICTION_AVOID',
               title: 'Hypothesis Contradiction',
-              explanation: `Placing a Cat 🐱 at (${r + 1}, ${c + 1}) leads to an inevitable rule contradiction down the line. Therefore, this cell MUST be a Dog 🐶!`,
+              explanation: `Placing a O at (${r + 1}, ${c + 1}) leads to an inevitable rule contradiction down the line. Therefore, this cell MUST be a X!`,
               highlightedCells: [{ r, c, role: 'primary' }],
               highlightedLine: { type: 'row', index: r }
             };
@@ -918,7 +918,7 @@ export class Solver {
       for (let c = 0; c < N - 2; c++) {
         const v = b.get(r, c);
         if (v !== CellValue.EMPTY && v === b.get(r, c + 1) && v === b.get(r, c + 2)) {
-          const name = v === CellValue.DOG ? 'Dogs 🐶' : 'Cats 🐱';
+          const name = v === CellValue.DOG ? 'Xs' : 'Os';
           const opp = v === CellValue.DOG ? CellValue.CAT : CellValue.DOG;
           return {
             r, c: c + 1, expectedVal: opp,
@@ -934,7 +934,7 @@ export class Solver {
       for (let r = 0; r < N - 2; r++) {
         const v = b.get(r, c);
         if (v !== CellValue.EMPTY && v === b.get(r + 1, c) && v === b.get(r + 2, c)) {
-          const name = v === CellValue.DOG ? 'Dogs 🐶' : 'Cats 🐱';
+          const name = v === CellValue.DOG ? 'Xs' : 'Os';
           const opp = v === CellValue.DOG ? CellValue.CAT : CellValue.DOG;
           return {
             r: r + 1, c, expectedVal: opp,
@@ -950,14 +950,14 @@ export class Solver {
       if (popcount(b.rowDog[r]) > half) {
         return {
           r, c: 0, expectedVal: CellValue.CAT,
-          message: `Row ${r + 1} has ${popcount(b.rowDog[r])} Dogs 🐶, exceeding the 50% limit of ${half}.`,
+          message: `Row ${r + 1} has ${popcount(b.rowDog[r])} Xs, exceeding the 50% limit of ${half}.`,
           cells: [{ r, c: 0 }]
         };
       }
       if (popcount(b.rowCat[r]) > half) {
         return {
           r, c: 0, expectedVal: CellValue.DOG,
-          message: `Row ${r + 1} has ${popcount(b.rowCat[r])} Cats 🐱, exceeding the 50% limit of ${half}.`,
+          message: `Row ${r + 1} has ${popcount(b.rowCat[r])} Os, exceeding the 50% limit of ${half}.`,
           cells: [{ r, c: 0 }]
         };
       }
@@ -968,14 +968,14 @@ export class Solver {
       if (popcount(b.colDog[c]) > half) {
         return {
           r: 0, c, expectedVal: CellValue.CAT,
-          message: `Column ${c + 1} has ${popcount(b.colDog[c])} Dogs 🐶, exceeding the 50% limit of ${half}.`,
+          message: `Column ${c + 1} has ${popcount(b.colDog[c])} Xs, exceeding the 50% limit of ${half}.`,
           cells: [{ r: 0, c }]
         };
       }
       if (popcount(b.colCat[c]) > half) {
         return {
           r: 0, c, expectedVal: CellValue.DOG,
-          message: `Column ${c + 1} has ${popcount(b.colCat[c])} Cats 🐱, exceeding the 50% limit of ${half}.`,
+          message: `Column ${c + 1} has ${popcount(b.colCat[c])} Os, exceeding the 50% limit of ${half}.`,
           cells: [{ r: 0, c }]
         };
       }

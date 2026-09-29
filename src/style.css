@@ -7,20 +7,25 @@
   --font-sans: 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
 
-  /* Pet Palettes */
-  --dog-amber: #f59e0b;
-  --dog-glow: rgba(245, 158, 11, 0.4);
-  --dog-bg: rgba(245, 158, 11, 0.12);
-  --dog-border: rgba(245, 158, 11, 0.35);
+  /* Symbol palettes: Cross (✕) = rose, Nought (◯) = sky.
+     Token names kept as dog/cat so existing rules keep working. */
+  --x-color: #f43f5e;
+  --o-color: #0ea5e9;
 
-  --cat-indigo: #6366f1;
-  --cat-glow: rgba(99, 102, 241, 0.4);
-  --cat-bg: rgba(99, 102, 241, 0.12);
-  --cat-border: rgba(99, 102, 241, 0.35);
+  --dog-amber: #f43f5e;
+  --dog-glow: rgba(244, 63, 94, 0.4);
+  --dog-bg: rgba(244, 63, 94, 0.12);
+  --dog-border: rgba(244, 63, 94, 0.35);
 
-  /* Clues */
-  --clue-equal: #0ea5e9;
-  --clue-cross: #f43f5e;
+  --cat-indigo: #0ea5e9;
+  --cat-glow: rgba(14, 165, 233, 0.4);
+  --cat-bg: rgba(14, 165, 233, 0.12);
+  --cat-border: rgba(14, 165, 233, 0.35);
+
+  /* Edge clues — kept visually distinct from the X (rose) / O (sky) symbols
+     so the "×" difference-clue is never confused with the ✕ cross mark. */
+  --clue-equal: #f59e0b;
+  --clue-cross: #a855f7;
 
   /* Layout dimensions */
   --header-height: 64px;
@@ -154,8 +159,12 @@ body {
 .logo-pet {
   font-size: 1.4rem;
   line-height: 1;
+  font-weight: 900;
   filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
 }
+
+.logo-pet.dog { color: var(--x-color); }
+.logo-pet.cat { color: var(--o-color); }
 
 .logo-title {
   font-weight: 800;

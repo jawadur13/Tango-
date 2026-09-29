@@ -136,8 +136,8 @@ function renderBoard(): void {
     html += `
       <th class="col-header-cell" style="width: ${cellSize}px;">
         <div class="col-header-counter ${badgeClass}">
-          <span>🐶${dCount}</span>
-          <span>🐱${cCount}</span>
+          <span>✕${dCount}</span>
+          <span>◯${cCount}</span>
         </div>
       </th>
     `;
@@ -157,8 +157,8 @@ function renderBoard(): void {
     html += `
       <th class="row-header-cell">
         <div class="row-header-counter ${rBadgeClass}">
-          <span>🐶${rDCount}</span>
-          <span>🐱${rCCount}</span>
+          <span>✕${rDCount}</span>
+          <span>◯${rCCount}</span>
         </div>
       </th>
     `;
@@ -502,9 +502,9 @@ function setupEvents(): void {
     if (!state.selectedCell) return;
     const { r, c } = state.selectedCell;
 
-    if (e.key === '1' || e.key.toLowerCase() === 'd') {
+    if (e.key === '1' || e.key.toLowerCase() === 'x') {
       state.setCellValue(r, c, CellValue.DOG);
-    } else if (e.key === '2' || e.key.toLowerCase() === 'c') {
+    } else if (e.key === '2' || e.key.toLowerCase() === 'o') {
       state.setCellValue(r, c, CellValue.CAT);
     } else if (e.key === 'Backspace' || e.key === 'Delete' || e.key === '0' || e.key.toLowerCase() === 'e') {
       state.setCellValue(r, c, CellValue.EMPTY);

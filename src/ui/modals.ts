@@ -204,10 +204,10 @@ export class ModalManager {
 
       <div style="display: flex; flex-direction: column; gap: 20px; font-size: 0.9rem; line-height: 1.5;">
         <div style="display: flex; gap: 14px; align-items: flex-start;">
-          <div style="font-size: 1.8rem; line-height: 1;">🐶🐱</div>
+          <div style="font-size: 1.8rem; line-height: 1;"><span style="color: var(--x-color); font-weight: 900;">✕</span><span style="color: var(--o-color); font-weight: 900;">◯</span></div>
           <div>
-            <strong style="color: var(--text-main); font-size: 1rem;">1. Two Animals</strong>
-            <p style="color: var(--text-muted); margin-top: 2px;">Every cell must contain either a Dog or a Cat. No cell is left empty.</p>
+            <strong style="color: var(--text-main); font-size: 1rem;">1. Two Symbols</strong>
+            <p style="color: var(--text-muted); margin-top: 2px;">Every cell must contain either an ✕ (Cross) or an ◯ (Nought). No cell is left empty.</p>
           </div>
         </div>
 
@@ -215,7 +215,7 @@ export class ModalManager {
           <div style="font-size: 1.8rem; line-height: 1;">⚖️</div>
           <div>
             <strong style="color: var(--text-main); font-size: 1rem;">2. 50% Balance Rule</strong>
-            <p style="color: var(--text-muted); margin-top: 2px;">Each row and each column must contain exactly equal numbers of Dogs and Cats (e.g. 7 Dogs and 7 Cats on a 14×14 board).</p>
+            <p style="color: var(--text-muted); margin-top: 2px;">Each row and each column must contain exactly equal numbers of ✕ and ◯ (e.g. 7 Crosses and 7 Noughts on a 14×14 board).</p>
           </div>
         </div>
 
@@ -223,7 +223,7 @@ export class ModalManager {
           <div style="font-size: 1.8rem; line-height: 1;">🚫</div>
           <div>
             <strong style="color: var(--text-main); font-size: 1rem;">3. No Three-in-a-Row</strong>
-            <p style="color: var(--text-muted); margin-top: 2px;">Never allow three identical animals consecutively horizontally or vertically (e.g. no 🐶🐶🐶 or 🐱🐱🐱).</p>
+            <p style="color: var(--text-muted); margin-top: 2px;">Never allow three identical symbols consecutively horizontally or vertically (e.g. no ✕✕✕ or ◯◯◯).</p>
           </div>
         </div>
 
@@ -231,7 +231,7 @@ export class ModalManager {
           <div style="font-size: 1.8rem; line-height: 1; color: var(--clue-equal); font-weight: 900;">=</div>
           <div>
             <strong style="color: var(--text-main); font-size: 1rem;">4. Equal Clue (=)</strong>
-            <p style="color: var(--text-muted); margin-top: 2px;">Cells separated by an "=" sign must be the <strong>same</strong> animal.</p>
+            <p style="color: var(--text-muted); margin-top: 2px;">Cells separated by an "=" sign must be the <strong>same</strong> symbol.</p>
           </div>
         </div>
 
@@ -239,15 +239,15 @@ export class ModalManager {
           <div style="font-size: 1.8rem; line-height: 1; color: var(--clue-cross); font-weight: 900;">×</div>
           <div>
             <strong style="color: var(--text-main); font-size: 1rem;">5. Different Clue (×)</strong>
-            <p style="color: var(--text-muted); margin-top: 2px;">Cells separated by an "×" sign must be <strong>different</strong> animals.</p>
+            <p style="color: var(--text-muted); margin-top: 2px;">Cells separated by an "×" sign must be <strong>different</strong> symbols.</p>
           </div>
         </div>
 
         <div style="background: var(--bg-surface-elevated); padding: 14px; border-radius: 14px; border: 1px solid var(--border-subtle); margin-top: 4px;">
           <strong style="color: #fbbf24; font-size: 0.95rem;">💡 Pro Solving Strategy:</strong>
           <ul style="color: var(--text-muted); margin-left: 18px; margin-top: 6px; font-size: 0.85rem; line-height: 1.6;">
-            <li><strong>Cap Pairs:</strong> If you see 🐶🐶, cap both ends with 🐱 (🐱🐶🐶🐱).</li>
-            <li><strong>Sandwich:</strong> If you see 🐶_🐶, the middle must be 🐱 (🐶🐱🐶).</li>
+            <li><strong>Cap Pairs:</strong> If you see ✕✕, cap both ends with ◯ (◯✕✕◯).</li>
+            <li><strong>Sandwich:</strong> If you see ✕_✕, the middle must be ◯ (✕◯✕).</li>
             <li><strong>Equal Pair Boundaries:</strong> If two cells have "=", the cells immediately before and after on that line cannot match them!</li>
           </ul>
         </div>
@@ -338,7 +338,7 @@ export class ModalManager {
   public openShareModal(): void {
     const puzzle = this.state.puzzle;
     const shareUrl = this.state.getShareUrl();
-    const shareText = `🐶 Tango² Logic Puzzle\nSize: ${puzzle.size}×${puzzle.size} | ${puzzle.difficulty}\nID: ${puzzle.id}\nPlay: ${shareUrl}`;
+    const shareText = `✕◯ Tango² Logic Puzzle\nSize: ${puzzle.size}×${puzzle.size} | ${puzzle.difficulty}\nID: ${puzzle.id}\nPlay: ${shareUrl}`;
 
     this.content.innerHTML = `
       <div class="modal-header">
@@ -410,7 +410,7 @@ export class ModalManager {
         <div style="font-size: 4rem; margin-bottom: 10px; animation: pop-in 0.3s ease;">🎉</div>
         <h2 style="font-size: 1.8rem; font-weight: 800; margin-bottom: 6px;">Puzzle Solved!</h2>
         <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 24px;">
-          Brilliant deduction! The dogs and cats are perfectly balanced.
+          Brilliant deduction! Every row and column is perfectly balanced.
         </p>
 
         <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 24px;">
@@ -443,7 +443,7 @@ export class ModalManager {
     `;
 
     this.content.querySelector('#btn-victory-share')?.addEventListener('click', async () => {
-      const shareMsg = `🐶 Tango² Solved! 🎉\n${puzzle.size}×${puzzle.size} ${puzzle.difficulty} in ${timeFormatted}\nTwo animals. One solution.`;
+      const shareMsg = `✕◯ Tango² Solved! 🎉\n${puzzle.size}×${puzzle.size} ${puzzle.difficulty} in ${timeFormatted}\nTwo symbols. One solution.`;
       try {
         await navigator.clipboard.writeText(shareMsg);
         const btn = this.content.querySelector('#btn-victory-share');
@@ -511,7 +511,7 @@ export class ModalManager {
             background: ${tool === t ? '#10b981' : 'var(--bg-surface-elevated)'};
             color: ${tool === t ? '#fff' : 'var(--text-main)'};
             border: 1px solid ${tool === t ? '#10b981' : 'var(--border-subtle)'};">
-            ${t === 'dog' ? '🐶 Dog' : t === 'cat' ? '🐱 Cat' : t === 'erase' ? '⌫ Erase' : t === 'equal' ? '= Equal' : '× Diff'}
+            ${t === 'dog' ? '✕ Cross' : t === 'cat' ? '◯ Nought' : t === 'erase' ? '⌫ Erase' : t === 'equal' ? '= Equal' : '× Diff'}
           </button>
         `).join('')}
       </div>
@@ -523,8 +523,9 @@ export class ModalManager {
                 <td data-cr="${r}" data-cc="${c}" style="
                   width: ${px}px; height: ${px}px; text-align: center; font-size: ${Math.round(px * 0.55)}px;
                   border: 1px solid var(--border-subtle); cursor: pointer;
-                  background: ${v === CellValue.EMPTY ? 'transparent' : v === CellValue.DOG ? 'rgba(245,158,11,0.18)' : 'rgba(99,102,241,0.18)'};
-                ">${v === CellValue.DOG ? '🐶' : v === CellValue.CAT ? '🐱' : ''}</td>
+                  font-weight: 900; color: ${v === CellValue.DOG ? 'var(--x-color)' : 'var(--o-color)'};
+                  background: ${v === CellValue.EMPTY ? 'transparent' : v === CellValue.DOG ? 'rgba(244,63,94,0.16)' : 'rgba(14,165,233,0.16)'};
+                ">${v === CellValue.DOG ? '✕' : v === CellValue.CAT ? '◯' : ''}</td>
                 ${c < size - 1 ? `<td data-hr="${r}" data-hc="${c}" title="clue" style="
                   width: 18px; text-align: center; font-size: 0.8rem; font-weight: 900; cursor: pointer;
                   color: ${hClues[r][c] === EdgeClue.EQUAL ? 'var(--clue-equal)' : hClues[r][c] === EdgeClue.CROSS ? 'var(--clue-cross)' : 'var(--text-dim)'};">

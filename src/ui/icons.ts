@@ -4,96 +4,40 @@
  */
 
 export const ICONS = {
+  // Note: keys DOG/CAT are kept as the internal two-symbol identity so no
+  // engine/state code changes. Visually they are the tic-tac-toe Cross (✕)
+  // and Nought (◯) marks.
   DOG: `
-    <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" class="icon-svg icon-dog" aria-label="Dog">
+    <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" class="icon-svg icon-x" aria-label="Cross">
       <defs>
-        <radialGradient id="dogFur" cx="50%" cy="40%" r="55%">
-          <stop offset="0%" stop-color="#fbbf24"/>
-          <stop offset="100%" stop-color="#d97706"/>
-        </radialGradient>
-        <linearGradient id="dogEarL" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stop-color="#b45309"/>
-          <stop offset="100%" stop-color="#78350f"/>
-        </linearGradient>
-        <linearGradient id="dogEarR" x1="100%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stop-color="#b45309"/>
-          <stop offset="100%" stop-color="#78350f"/>
+        <linearGradient id="xMark" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#fb7185"/>
+          <stop offset="100%" stop-color="#e11d48"/>
         </linearGradient>
       </defs>
-      <!-- Left Ear (floppy puppy style) -->
-      <path d="M14 18 C8 24, 6 36, 12 44 C15 48, 20 46, 22 40 C24 34, 22 22, 16 18 Z" fill="url(#dogEarL)" filter="drop-shadow(0 2px 3px rgba(0,0,0,0.25))"/>
-      <!-- Right Ear -->
-      <path d="M50 18 C56 24, 58 36, 52 44 C49 48, 44 46, 42 40 C40 34, 42 22, 48 18 Z" fill="url(#dogEarR)" filter="drop-shadow(0 2px 3px rgba(0,0,0,0.25))"/>
-      <!-- Head Base -->
-      <circle cx="32" cy="34" r="23" fill="url(#dogFur)" filter="drop-shadow(0 3px 4px rgba(0,0,0,0.2))"/>
-      <!-- Muzzle / Snout -->
-      <ellipse cx="32" cy="41" rx="14" ry="11" fill="#fef3c7"/>
-      <!-- Nose -->
-      <path d="M28 35 C30 33, 34 33, 36 35 C37 36.5, 34 40, 32 40.5 C30 40, 27 36.5, 28 35 Z" fill="#1e1b4b"/>
-      <ellipse cx="30" cy="35.5" rx="1.5" ry="0.8" fill="#ffffff" opacity="0.6"/>
-      <!-- Smile -->
-      <path d="M28 42 Q32 45 36 42" stroke="#451a03" stroke-width="2" stroke-linecap="round" fill="none"/>
-      <!-- Tongue (subtle cute) -->
-      <path d="M30.5 43.5 C30.5 46.5, 33.5 46.5, 33.5 43.5 Z" fill="#f43f5e"/>
-      <!-- Left Eye -->
-      <ellipse cx="23" cy="30" rx="3.5" ry="4" fill="#1e1b4b"/>
-      <circle cx="21.5" cy="28.5" r="1.3" fill="#ffffff"/>
-      <circle cx="24" cy="31.5" r="0.6" fill="#ffffff"/>
-      <!-- Right Eye -->
-      <ellipse cx="41" cy="30" rx="3.5" ry="4" fill="#1e1b4b"/>
-      <circle cx="39.5" cy="28.5" r="1.3" fill="#ffffff"/>
-      <circle cx="42" cy="31.5" r="0.6" fill="#ffffff"/>
-      <!-- Cute Cheeks -->
-      <circle cx="16" cy="38" r="3.5" fill="#f87171" opacity="0.45"/>
-      <circle cx="48" cy="38" r="3.5" fill="#f87171" opacity="0.45"/>
+      <g stroke="url(#xMark)" stroke-width="11" stroke-linecap="round" filter="drop-shadow(0 3px 4px rgba(190,18,60,0.35))">
+        <line x1="18" y1="18" x2="46" y2="46"/>
+        <line x1="46" y1="18" x2="18" y2="46"/>
+      </g>
+      <!-- subtle inner highlight -->
+      <g stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" opacity="0.28">
+        <line x1="20" y1="20" x2="44" y2="44"/>
+        <line x1="44" y1="20" x2="20" y2="44"/>
+      </g>
     </svg>
   `,
 
   CAT: `
-    <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" class="icon-svg icon-cat" aria-label="Cat">
+    <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" class="icon-svg icon-o" aria-label="Nought">
       <defs>
-        <radialGradient id="catFur" cx="50%" cy="40%" r="55%">
-          <stop offset="0%" stop-color="#818cf8"/>
-          <stop offset="100%" stop-color="#4f46e5"/>
-        </radialGradient>
-        <linearGradient id="catEarInner" x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stop-color="#fda4af"/>
-          <stop offset="100%" stop-color="#f43f5e"/>
+        <linearGradient id="oMark" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#38bdf8"/>
+          <stop offset="100%" stop-color="#0284c7"/>
         </linearGradient>
       </defs>
-      <!-- Left Ear (perky feline triangle) -->
-      <path d="M12 24 L22 7 C24 5, 27 10, 27 16 L17 29 Z" fill="#4338ca"/>
-      <path d="M15 23 L22 10 C23 9, 25 12, 25 16 L18 26 Z" fill="url(#catEarInner)"/>
-      <!-- Right Ear -->
-      <path d="M52 24 L42 7 C40 5, 37 10, 37 16 L47 29 Z" fill="#4338ca"/>
-      <path d="M49 23 L42 10 C41 9, 39 12, 39 16 L46 26 Z" fill="url(#catEarInner)"/>
-      <!-- Head Base -->
-      <ellipse cx="32" cy="36" rx="23" ry="20" fill="url(#catFur)" filter="drop-shadow(0 3px 4px rgba(0,0,0,0.25))"/>
-      <!-- Forehead Mark (cute diamond/tabby mark) -->
-      <path d="M32 20 L34 26 L32 28 L30 26 Z" fill="#312e81" opacity="0.4"/>
-      <!-- Left Eye (almond feline) -->
-      <ellipse cx="22" cy="34" rx="4" ry="4.5" fill="#0f172a"/>
-      <circle cx="22" cy="34" r="3.5" fill="#34d399"/>
-      <ellipse cx="22" cy="34" rx="1.4" ry="3.5" fill="#0f172a"/>
-      <circle cx="20.5" cy="32" r="1.1" fill="#ffffff"/>
-      <!-- Right Eye -->
-      <ellipse cx="42" cy="34" rx="4" ry="4.5" fill="#0f172a"/>
-      <circle cx="42" cy="34" r="3.5" fill="#34d399"/>
-      <ellipse cx="42" cy="34" rx="1.4" ry="3.5" fill="#0f172a"/>
-      <circle cx="40.5" cy="32" r="1.1" fill="#ffffff"/>
-      <!-- Snout / Nose -->
-      <polygon points="32,41 29,38 35,38" fill="#fda4af"/>
-      <!-- Mouth -->
-      <path d="M29 42 Q32 44 32 41 Q32 44 35 42" stroke="#1e1b4b" stroke-width="1.8" stroke-linecap="round" fill="none"/>
-      <!-- Whiskers Left -->
-      <line x1="26" y1="41" x2="11" y2="39" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" opacity="0.85"/>
-      <line x1="26" y1="43" x2="12" y2="44" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" opacity="0.85"/>
-      <!-- Whiskers Right -->
-      <line x1="38" y1="41" x2="53" y2="39" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" opacity="0.85"/>
-      <line x1="38" y1="43" x2="52" y2="44" stroke="#ffffff" stroke-width="1.5" stroke-linecap="round" opacity="0.85"/>
-      <!-- Blush -->
-      <circle cx="15" cy="40" r="3" fill="#f43f5e" opacity="0.3"/>
-      <circle cx="49" cy="40" r="3" fill="#f43f5e" opacity="0.3"/>
+      <circle cx="32" cy="32" r="19" fill="none" stroke="url(#oMark)" stroke-width="11" filter="drop-shadow(0 3px 4px rgba(2,132,199,0.35))"/>
+      <!-- subtle inner highlight -->
+      <circle cx="32" cy="32" r="19" fill="none" stroke="#ffffff" stroke-width="2.4" opacity="0.28"/>
     </svg>
   `,
 
