@@ -1,5 +1,5 @@
 import { GameState } from './state/game-state';
-import { ViewportManager } from './ui/viewport';
+import { ViewportManager, cellPixelSize } from './ui/viewport';
 import { ModalManager } from './ui/modals';
 import { ICONS } from './ui/icons';
 import { CellValue, EdgeClue, BoardSize, Difficulty } from './types/puzzle';
@@ -75,24 +75,13 @@ function formatTime(totalSec: number): string {
   return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
 }
 
-// Compute dynamic cell pixel size based on board size
-function getCellPixelSize(size: number): number {
-  if (size <= 8) return 56;
-  if (size <= 10) return 52;
-  if (size <= 12) return 48;
-  if (size >= 22) return 34;
-  if (size >= 18) return 38;
-  if (size >= 16) return 42;
-  return 46;
-}
-
 // Render Board & Grid
 function renderBoard(): void {
   const puzzle = state.puzzle;
   const size = puzzle.size;
   const half = size / 2;
   const currentGrid = state.currentGrid;
-  const cellSize = getCellPixelSize(size);
+  const cellSize = cellPixelSize(size);
 
   const selectedR = state.selectedCell?.r ?? -1;
   const selectedC = state.selectedCell?.c ?? -1;
@@ -270,6 +259,13 @@ function renderBoard(): void {
       state.setCellValue(r, c, CellValue.EMPTY);
     });
   });
+}
+
+// Lightweight timer refresh — runs every second WITHOUT rebuilding the board.
+function renderTimer(): void {
+  timerDisplay.textContent = formatTime(state.elapsedSeconds);
+  timerIcon.textContent = state.isPaused ? '▶' : '⏸';
+  pauseOverlay.classList.toggle('hidden', !state.isPaused);
 }
 
 // Update UI
@@ -525,6 +521,13 @@ function setupEvents(): void {
     }
   });
 
+  // Flush the session right before the page goes away so the timer and grid
+  // resume accurately on reload (pagehide/visibilitychange cover mobile too).
+  window.addEventListener('pagehide', () => state.persist());
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') state.persist();
+  });
+
   // Handle URL query parameters for challenge sharing (e.g. ?size=16&diff=Hard&seed=12345)
   const urlParams = new URLSearchParams(window.location.search);
   const paramDaily = urlParams.get('daily');
@@ -551,6 +554,7 @@ function setupEvents(): void {
 mountIcons();
 setupEvents();
 state.subscribe(updateUI);
+state.subscribeTick(renderTimer);
 
 // Initial Render & Auto-Fit
 updateUI();
