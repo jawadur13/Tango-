@@ -147,11 +147,11 @@ export class ModalManager {
 
         <div style="display: flex; justify-content: center; gap: 20px; margin-bottom: 16px;">
           <div style="background: var(--bg-surface-elevated); padding: 12px 20px; border-radius: 12px; border: 1px solid var(--border-subtle);">
-            <div style="font-size: 1.5rem; font-weight: 800; color: #f59e0b; font-family: var(--font-mono);">${this.state.stats.dailyStreak}</div>
+            <div style="font-size: 1.5rem; font-weight: 800; color: var(--accent-hint); font-family: var(--font-mono);">${this.state.stats.dailyStreak}</div>
             <div style="font-size: 0.72rem; color: var(--text-dim); font-weight: 700;">DAY STREAK</div>
           </div>
           <div style="background: var(--bg-surface-elevated); padding: 12px 20px; border-radius: 12px; border: 1px solid var(--border-subtle);">
-            <div style="font-size: 1.5rem; font-weight: 800; color: ${isCompleted ? '#10b981' : '#6366f1'}; font-family: var(--font-mono);">
+            <div style="font-size: 1.5rem; font-weight: 800; color: ${isCompleted ? 'var(--accent-success)' : 'var(--accent-primary)'}; font-family: var(--font-mono);">
               ${isCompleted ? '✓ Done' : 'Pending'}
             </div>
             <div style="font-size: 0.72rem; color: var(--text-dim); font-weight: 700;">STATUS</div>
@@ -165,9 +165,9 @@ export class ModalManager {
             const dayNum = d.slice(8, 10);
             return `<button class="daily-day-btn ${isSel ? 'is-active' : ''}" data-date="${d}" title="${d}${done ? ' (completed)' : ''}" style="
               padding: 8px 2px; border-radius: 10px; font-size: 0.78rem; font-weight: 700; cursor: pointer;
-              background: ${isSel ? '#6366f1' : 'var(--bg-surface-elevated)'};
-              color: ${isSel ? '#fff' : done ? '#10b981' : 'var(--text-main)'};
-              border: 1px solid ${isSel ? '#6366f1' : 'var(--border-subtle)'};
+              background: ${isSel ? 'var(--accent-primary)' : 'var(--bg-surface-elevated)'};
+              color: ${isSel ? '#fff' : done ? 'var(--accent-success)' : 'var(--text-main)'};
+              border: 1px solid ${isSel ? 'var(--accent-primary)' : 'var(--border-subtle)'};
             ">${dayNum}${done ? '✓' : ''}</button>`;
           }).join('')}
         </div>
@@ -244,7 +244,7 @@ export class ModalManager {
         </div>
 
         <div style="background: var(--bg-surface-elevated); padding: 14px; border-radius: 14px; border: 1px solid var(--border-subtle); margin-top: 4px;">
-          <strong style="color: #fbbf24; font-size: 0.95rem;">💡 Pro Solving Strategy:</strong>
+          <strong style="color: var(--accent-hint); font-size: 0.95rem;">💡 Pro Solving Strategy:</strong>
           <ul style="color: var(--text-muted); margin-left: 18px; margin-top: 6px; font-size: 0.85rem; line-height: 1.6;">
             <li><strong>Cap Pairs:</strong> If you see ✕✕, cap both ends with ◯ (◯✕✕◯).</li>
             <li><strong>Sandwich:</strong> If you see ✕_✕, the middle must be ◯ (✕◯✕).</li>
@@ -353,7 +353,7 @@ export class ModalManager {
 
         <div style="background: var(--bg-surface-elevated); padding: 14px; border-radius: 12px; border: 1px solid var(--border-subtle); margin-bottom: 16px;">
           <div style="font-size: 0.7rem; color: var(--text-dim); font-weight: 700; margin-bottom: 4px;">PUZZLE ID</div>
-          <div style="font-family: var(--font-mono); font-size: 0.95rem; font-weight: 700; color: #6366f1; word-break: break-all;">
+          <div style="font-family: var(--font-mono); font-size: 0.95rem; font-weight: 700; color: var(--accent-primary); word-break: break-all;">
             ${puzzle.id}
           </div>
         </div>
@@ -367,7 +367,7 @@ export class ModalManager {
 
         <button id="btn-copy-link" class="btn-primary" style="margin-bottom: 10px; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);">🔗 Copy Share Link</button>
         <button id="btn-copy-share" class="btn-primary" style="margin-bottom: 10px;">📋 Copy Share Card</button>
-        <div id="copy-status" style="text-align: center; font-size: 0.85rem; color: #10b981; height: 20px;"></div>
+        <div id="copy-status" style="text-align: center; font-size: 0.85rem; color: var(--accent-success); height: 20px;"></div>
       </div>
     `;
 
@@ -499,18 +499,18 @@ export class ModalManager {
         ${([...BOARD_SIZES] as BoardSize[]).filter(s => s <= 16).map(s => `
           <button class="daily-day-btn ${s === size ? 'is-active' : ''}" data-csize="${s}" style="
             padding: 6px 12px; border-radius: 10px; font-size: 0.8rem; font-weight: 700; cursor: pointer;
-            background: ${s === size ? '#6366f1' : 'var(--bg-surface-elevated)'};
+            background: ${s === size ? 'var(--accent-primary)' : 'var(--bg-surface-elevated)'};
             color: ${s === size ? '#fff' : 'var(--text-main)'};
-            border: 1px solid ${s === size ? '#6366f1' : 'var(--border-subtle)'};">${s}×${s}</button>
+            border: 1px solid ${s === size ? 'var(--accent-primary)' : 'var(--border-subtle)'};">${s}×${s}</button>
         `).join('')}
       </div>
       <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px;">
         ${(['dog', 'cat', 'erase', 'equal', 'cross'] as const).map(t => `
           <button data-tool="${t}" style="
             padding: 8px 12px; border-radius: 10px; font-size: 0.82rem; font-weight: 700; cursor: pointer;
-            background: ${tool === t ? '#10b981' : 'var(--bg-surface-elevated)'};
+            background: ${tool === t ? 'var(--accent-success)' : 'var(--bg-surface-elevated)'};
             color: ${tool === t ? '#fff' : 'var(--text-main)'};
-            border: 1px solid ${tool === t ? '#10b981' : 'var(--border-subtle)'};">
+            border: 1px solid ${tool === t ? 'var(--accent-success)' : 'var(--border-subtle)'};">
             ${t === 'dog' ? '✕ Cross' : t === 'cat' ? '◯ Nought' : t === 'erase' ? '⌫ Erase' : t === 'equal' ? '= Equal' : '× Diff'}
           </button>
         `).join('')}
@@ -541,7 +541,7 @@ export class ModalManager {
           `).join('')}
         </table>
       </div>
-      ${errorMsg ? `<div style="color: #f87171; font-size: 0.85rem; margin-top: 10px;">⚠ ${errorMsg}</div>` : ''}
+      ${errorMsg ? `<div style="color: var(--accent-danger); font-size: 0.85rem; margin-top: 10px;">⚠ ${errorMsg}</div>` : ''}
       <div style="display: flex; gap: 10px; margin-top: 14px;">
         <button id="btn-custom-clear" class="meta-pill" style="flex: 1; justify-content: center; padding: 12px;">Clear</button>
         <button id="btn-custom-surprise" class="meta-pill" style="flex: 1; justify-content: center; padding: 12px;">🎲 Starter</button>
