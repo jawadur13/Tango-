@@ -163,6 +163,7 @@ body {
   letter-spacing: -0.03em;
   background: linear-gradient(135deg, var(--dog-amber) 0%, #ec4899 50%, var(--cat-indigo) 100%);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
@@ -343,6 +344,12 @@ body {
   position: absolute;
   top: 50%;
   left: 50%;
+  /* Size to the board's natural dimensions. Without this, an absolutely
+     positioned box shrinks to the space left of it (only the right half of
+     the container), squeezing the grid columns while row heights stay fixed
+     and stretching every cell into a tall sliver — worst on narrow screens. */
+  width: max-content;
+  height: max-content;
   transform-origin: 0 0;
   will-change: transform;
 }
@@ -502,17 +509,18 @@ body {
   font-size: 0.62rem;
 }
 
-/* Board Cell */
+/* Board Cell — MUST stay a table-cell so the grid lays out as rows/columns.
+   (Do not set display:flex here; that removes it from the table formatting
+   context and collapses the whole board into a single vertical column.) */
 .board-cell {
   position: relative;
   background: var(--cell-bg);
   border: 1px solid var(--grid-line);
   padding: 0;
   cursor: pointer;
+  text-align: center;
+  vertical-align: middle;
   transition: background-color 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 /* Alternating subtle guide bands every 2 cells */
@@ -594,10 +602,11 @@ body {
   z-index: 6;
 }
 
-/* Pet Icons inside cells */
+/* Pet Icons inside cells — absolutely centered so the td keeps table layout.
+   inset:9% yields an 82%-sized icon centered in the cell. */
 .cell-pet-container {
-  width: 82%;
-  height: 82%;
+  position: absolute;
+  inset: 9%;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1100,17 +1109,35 @@ body {
 }
 
 /* Responsive queries */
+@media (max-width: 900px) {
+  /* Let the header reflow instead of clipping its buttons on narrow screens. */
+  .app-header {
+    height: auto;
+    min-height: var(--header-height);
+    flex-wrap: wrap;
+    gap: 8px 10px;
+    padding: 8px 12px;
+  }
+  .header-meta,
+  .header-actions {
+    flex-wrap: wrap;
+  }
+}
+
 @media (max-width: 768px) {
   .app-header {
-    padding: 0 12px;
+    padding: 8px 12px;
   }
   .brand-tagline {
     display: none;
   }
+  .logo-title { font-size: 1.3rem; }
   .app-dock {
     gap: 12px;
     padding: 0 10px;
   }
+  .dock-input-group { gap: 8px; }
+  .btn-pet-input { padding: 10px 14px; }
   .dock-action-group {
     padding-left: 10px;
     gap: 4px;
@@ -1122,4 +1149,17 @@ body {
   .dock-action-label {
     display: none;
   }
+  /* Keep the primary actions reachable; icon buttons compress. */
+  .btn-primary-action { padding: 8px 12px; font-size: 0.82rem; }
+}
+
+@media (max-width: 560px) {
+  .header-actions { gap: 6px; }
+  .btn-icon { width: 32px; height: 32px; }
+  .btn-primary-action span { font-size: 0.8rem; }
+  .btn-pet-text { display: none; }
+  .btn-pet-input { padding: 10px 12px; }
+  .shortcut-badge { display: none; }
+  /* Dock stays on one row; pet buttons shrink to icon + key. */
+  .app-dock { gap: 10px; }
 }

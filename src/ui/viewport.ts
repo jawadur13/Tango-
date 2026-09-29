@@ -1,3 +1,20 @@
+/**
+ * Single source of truth for the on-screen pixel size of a board cell.
+ * Used by both the renderer (main.ts) and fit-to-screen so their geometry
+ * always agrees. Larger boards use smaller cells; 16×16 and 24×24 stay
+ * comfortably readable.
+ */
+export function cellPixelSize(size: number): number {
+  if (size <= 8) return 56;
+  if (size <= 10) return 52;
+  if (size <= 12) return 48;
+  if (size <= 14) return 46;
+  if (size <= 16) return 42;
+  if (size <= 18) return 40;
+  if (size <= 20) return 38;
+  return 34; // 22, 24
+}
+
 export class ViewportManager {
   private container: HTMLElement;
   private content: HTMLElement;
@@ -149,29 +166,41 @@ export class ViewportManager {
 
   public resetZoom(): void {
     this.scale = 1.0;
-    this.panX = 0;
-    this.panY = 0;
+    this.centerContent();
     this.applyTransform();
+  }
+
+  /**
+   * Measures the actual rendered (unscaled) board size and pans so the scaled
+   * board is centered in the container. The content is anchored at the
+   * container center (top/left 50%) with transform-origin 0 0, so centering
+   * means offsetting by half the scaled content size.
+   */
+  private centerContent(): void {
+    const w = this.content.offsetWidth;
+    const h = this.content.offsetHeight;
+    this.panX = -(w * this.scale) / 2;
+    this.panY = -(h * this.scale) / 2;
   }
 
   public fitToScreen(boardSize: number): void {
     const containerRect = this.container.getBoundingClientRect();
-    const availableW = containerRect.width - 32;
-    const availableH = containerRect.height - 32;
+    const availableW = containerRect.width - 40;
+    const availableH = containerRect.height - 40;
 
-    // Base cell size mirrors main.ts getCellPixelSize
-    const baseCellSize = boardSize <= 8 ? 56 : boardSize <= 10 ? 52 : boardSize <= 12 ? 48 : boardSize > 18 ? 34 : boardSize > 14 ? 38 : 42;
-    const gridPx = boardSize * baseCellSize + 40; // padding/clues
+    // Measure the real rendered board (board-wrapper padding, headers, clue
+    // overhang all included) instead of estimating — always matches the DOM.
+    const contentW = this.content.offsetWidth || (boardSize * cellPixelSize(boardSize) + 88);
+    const contentH = this.content.offsetHeight || contentW;
 
-    const scaleW = availableW / gridPx;
-    const scaleH = availableH / gridPx;
+    const scaleW = availableW / contentW;
+    const scaleH = availableH / contentH;
     // Small boards may scale up generously; huge boards cap at 1.2
     const maxScale = boardSize <= 10 ? 2.2 : boardSize <= 14 ? 1.6 : 1.2;
     const optimalScale = Math.min(scaleW, scaleH, maxScale);
 
     this.scale = Math.max(0.4, optimalScale);
-    this.panX = 0;
-    this.panY = 0;
+    this.centerContent();
     this.applyTransform();
   }
 
