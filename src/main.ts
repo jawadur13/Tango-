@@ -113,7 +113,8 @@ function renderBoard(): void {
   const selectedC = state.selectedCell?.c ?? -1;
 
   // Track conflicting cells from validation
-  const conflicts = state.validation.conflictingCells;
+  // Only conflicts that have survived the grace period (see ERROR_GRACE_MS).
+  const conflicts = state.visibleConflicts;
 
   // Active hint highlight sets
   const hintPrimary = state.activeHint ? `${state.activeHint.r},${state.activeHint.c}` : null;
@@ -377,9 +378,9 @@ function updateUI(): void {
   // by colour alone, which fails WCAG 1.4.1 Use of Colour).
   if (state.isGameComplete) {
     announce(`Puzzle solved in ${formatTime(state.elapsedSeconds)}.`);
-  } else if (state.settings.autoCheckMistakes && state.validation.hasMistakes) {
-    const first = state.validation.mistakes[0];
-    const n = state.validation.mistakes.length;
+  } else if (state.settings.autoCheckMistakes && state.visibleMistakes.length > 0) {
+    const first = state.visibleMistakes[0];
+    const n = state.visibleMistakes.length;
     announce(`${n} mistake${n > 1 ? 's' : ''} on the board. ${first.message}`);
   } else {
     announce(`${countFilled()} of ${p.size * p.size} cells filled.`);

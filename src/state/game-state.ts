@@ -6,6 +6,7 @@ import {
   Difficulty,
   GameMove,
   HintResult,
+  MistakeDetail,
   PuzzleDefinition,
   UserStats
 } from '../types/puzzle';
@@ -18,6 +19,13 @@ import { sounds } from '../ui/audio';
 const STORAGE_KEY_STATS = 'tango2_user_stats';
 const STORAGE_KEY_SETTINGS = 'tango2_settings';
 const STORAGE_KEY_SAVED_GAME = 'tango2_saved_game';
+
+/**
+ * How long a rule violation must persist before the board flags it. Placing a
+ * symbol and immediately seeing red punishes thinking out loud; a short grace
+ * period lets you try something and take it back without being scolded.
+ */
+export const ERROR_GRACE_MS = 5000;
 
 export interface GameSettings {
   autoCheckMistakes: boolean;
@@ -53,6 +61,17 @@ export class GameState {
     isComplete: false,
     isSolved: false
   };
+
+  /**
+   * Conflicts old enough to actually show (see ERROR_GRACE_MS). The board and
+   * the live region read these, never validation.conflictingCells directly, so
+   * a mistake you correct within the grace period is never flagged at all.
+   */
+  public visibleConflicts: Set<string> = new Set();
+  public visibleMistakes: MistakeDetail[] = [];
+  /** First time each conflicting cell entered conflict, keyed "r,c". */
+  private conflictSince = new Map<string, number>();
+  private errorRevealTimer: ReturnType<typeof setTimeout> | null = null;
 
   public settings: GameSettings = {
     autoCheckMistakes: true,
@@ -118,6 +137,7 @@ export class GameState {
     this.elapsedSeconds = 0;
     this.moveHistory = [];
     this.redoStack = [];
+    this.resetErrorGrace();
     this.selectedCell = { r: 0, c: 0 };
 
     this.puzzle = Generator.generatePuzzle(size, diff, seedInput);
@@ -151,6 +171,7 @@ export class GameState {
     this.elapsedSeconds = 0;
     this.moveHistory = [];
     this.redoStack = [];
+    this.resetErrorGrace();
     this.selectedCell = { r: 0, c: 0 };
 
     // Daily challenge rotates size/difficulty by date but stays reproducible.
@@ -176,6 +197,7 @@ export class GameState {
     this.elapsedSeconds = 0;
     this.moveHistory = [];
     this.redoStack = [];
+    this.resetErrorGrace();
     this.selectedCell = { r: 0, c: 0 };
 
     this.puzzle = puzzle;
@@ -329,6 +351,7 @@ export class GameState {
     this.currentGrid = this.puzzle.initialGrid.map(row => [...row]);
     this.moveHistory = [];
     this.redoStack = [];
+    this.resetErrorGrace();
     this.activeHint = null;
     this.isGameComplete = false;
     this.elapsedSeconds = 0;
@@ -387,11 +410,66 @@ export class GameState {
   }
 
   private validateCurrentGrid(): void {
-    this.validation = Validator.validate(
-      this.currentGrid,
-      this.puzzle,
-      this.settings.autoCheckMistakes
+    // Never compare against the stored solution: a placement that differs from
+    // it but breaks no rule is a legitimate line of reasoning, not a mistake.
+    // Only actual rule violations count. (The puzzle has exactly one solution,
+    // so a full board with no violations is still necessarily solved.)
+    this.validation = Validator.validate(this.currentGrid, this.puzzle, false);
+    this.refreshVisibleErrors();
+  }
+
+  /**
+   * Ages conflicts into visibility. A cell must stay in conflict for
+   * ERROR_GRACE_MS before it is shown, so a slip you fix quickly never lights
+   * up; a conflict that is resolved disappears immediately. Re-arms a timer for
+   * the next pending reveal so the board updates on its own.
+   */
+  private refreshVisibleErrors(): void {
+    const now = Date.now();
+    const current = this.validation.conflictingCells;
+
+    for (const key of [...this.conflictSince.keys()]) {
+      if (!current.has(key)) this.conflictSince.delete(key);
+    }
+    for (const key of current) {
+      if (!this.conflictSince.has(key)) this.conflictSince.set(key, now);
+    }
+
+    const visible = new Set<string>();
+    let nextRevealIn = Infinity;
+    for (const [key, since] of this.conflictSince) {
+      const age = now - since;
+      if (age >= ERROR_GRACE_MS) visible.add(key);
+      else nextRevealIn = Math.min(nextRevealIn, ERROR_GRACE_MS - age);
+    }
+
+    this.visibleConflicts = visible;
+    this.visibleMistakes = this.validation.mistakes.filter(m =>
+      m.cells.every(cell => visible.has(`${cell.r},${cell.c}`))
     );
+
+    if (this.errorRevealTimer) {
+      clearTimeout(this.errorRevealTimer);
+      this.errorRevealTimer = null;
+    }
+    if (nextRevealIn !== Infinity) {
+      this.errorRevealTimer = setTimeout(() => {
+        this.errorRevealTimer = null;
+        this.refreshVisibleErrors();
+        this.notify();
+      }, nextRevealIn + 20);
+    }
+  }
+
+  /** Forgets pending/!shown conflicts — used when the board is replaced. */
+  private resetErrorGrace(): void {
+    if (this.errorRevealTimer) {
+      clearTimeout(this.errorRevealTimer);
+      this.errorRevealTimer = null;
+    }
+    this.conflictSince.clear();
+    this.visibleConflicts = new Set();
+    this.visibleMistakes = [];
   }
 
   private checkCompletion(): void {
