@@ -7,37 +7,21 @@ export const ICONS = {
   // Note: keys DOG/CAT are kept as the internal two-symbol identity so no
   // engine/state code changes. Visually they are the tic-tac-toe Cross (✕)
   // and Nought (◯) marks.
+  // Flat single-stroke marks in currentColor: no gradient, shadow or inner
+  // highlight. Those muddied the shape once a 24x24 board is scaled to fit,
+  // and currentColor lets each surface (board, dock button) set the hue.
   DOG: `
     <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" class="icon-svg icon-x" aria-label="Cross">
-      <defs>
-        <linearGradient id="xMark" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stop-color="#fb7185"/>
-          <stop offset="100%" stop-color="#e11d48"/>
-        </linearGradient>
-      </defs>
-      <g stroke="url(#xMark)" stroke-width="11" stroke-linecap="round" filter="drop-shadow(0 3px 4px rgba(190,18,60,0.35))">
-        <line x1="18" y1="18" x2="46" y2="46"/>
-        <line x1="46" y1="18" x2="18" y2="46"/>
-      </g>
-      <!-- subtle inner highlight -->
-      <g stroke="#ffffff" stroke-width="2.4" stroke-linecap="round" opacity="0.28">
-        <line x1="20" y1="20" x2="44" y2="44"/>
-        <line x1="44" y1="20" x2="20" y2="44"/>
+      <g stroke="currentColor" stroke-width="10" stroke-linecap="round">
+        <line x1="19" y1="19" x2="45" y2="45"/>
+        <line x1="45" y1="19" x2="19" y2="45"/>
       </g>
     </svg>
   `,
 
   CAT: `
     <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" class="icon-svg icon-o" aria-label="Nought">
-      <defs>
-        <linearGradient id="oMark" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stop-color="#38bdf8"/>
-          <stop offset="100%" stop-color="#0284c7"/>
-        </linearGradient>
-      </defs>
-      <circle cx="32" cy="32" r="19" fill="none" stroke="url(#oMark)" stroke-width="11" filter="drop-shadow(0 3px 4px rgba(2,132,199,0.35))"/>
-      <!-- subtle inner highlight -->
-      <circle cx="32" cy="32" r="19" fill="none" stroke="#ffffff" stroke-width="2.4" opacity="0.28"/>
+      <circle cx="32" cy="32" r="18" fill="none" stroke="currentColor" stroke-width="10"/>
     </svg>
   `,
 
