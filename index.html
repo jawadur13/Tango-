@@ -69,10 +69,10 @@
           <span id="share-icon"></span>
         </button>
         <button id="btn-new-game" class="btn-primary-action" title="Start New Puzzle">
-          <span>✨ New Game</span>
+          <span>New Game</span>
         </button>
-        <button id="btn-custom-game" class="btn-primary-action" title="Build a Custom Puzzle" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
-          <span>🧩 Custom</span>
+        <button id="btn-custom-game" class="btn-secondary-action" title="Build a Custom Puzzle">
+          <span>Custom</span>
         </button>
       </div>
     </header>
@@ -121,9 +121,8 @@
       <div id="hint-banner" class="hint-banner hidden" role="status" aria-live="polite">
         <div class="hint-banner-content">
           <div class="hint-header">
-            <span class="hint-icon">💡</span>
+            <span class="hint-icon" id="hint-banner-icon" aria-hidden="true"></span>
             <strong id="hint-title" class="hint-title">Logical Hint</strong>
-            <span class="hint-tag">Deduction</span>
           </div>
           <p id="hint-explanation" class="hint-text"></p>
         </div>

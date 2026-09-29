@@ -37,7 +37,7 @@ export class ModalManager {
     const render = () => {
       this.content.innerHTML = `
         <div class="modal-header">
-          <h2 class="modal-title">✨ New Tango² Puzzle</h2>
+          <h2 class="modal-title">New Tango² Puzzle</h2>
           <button class="modal-close-btn" id="modal-close">${ICONS.CLOSE}</button>
         </div>
 
@@ -134,12 +134,11 @@ export class ModalManager {
       const isCompleted = this.state.stats.dailyCompletedDates.includes(selectedDate);
       this.content.innerHTML = `
       <div class="modal-header">
-        <h2 class="modal-title">📅 Daily Puzzle</h2>
+        <h2 class="modal-title">Daily Puzzle</h2>
         <button class="modal-close-btn" id="modal-close">${ICONS.CLOSE}</button>
       </div>
 
       <div style="text-align: center; padding: 10px 0 20px;">
-        <div style="font-size: 3rem; margin-bottom: 8px;">🗓️</div>
         <h3 style="font-size: 1.3rem; font-weight: 800; margin-bottom: 4px;">Tango² Daily Challenge</h3>
         <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 16px;">
           ${selectedDate} &bull; ${cfg.size}×${cfg.size} ${cfg.diff}
@@ -198,7 +197,7 @@ export class ModalManager {
   public openRulesModal(): void {
     this.content.innerHTML = `
       <div class="modal-header">
-        <h2 class="modal-title">📖 How to Play Tango²</h2>
+        <h2 class="modal-title">How to Play Tango²</h2>
         <button class="modal-close-btn" id="modal-close">${ICONS.CLOSE}</button>
       </div>
 
@@ -212,7 +211,7 @@ export class ModalManager {
         </div>
 
         <div style="display: flex; gap: 14px; align-items: flex-start;">
-          <div style="font-size: 1.8rem; line-height: 1;">⚖️</div>
+          <div style="font-size: 1.1rem; line-height: 1.6; font-weight: 900; letter-spacing: 1px;"><span style="color: var(--x-color);">✕✕</span><span style="color: var(--o-color);">◯◯</span></div>
           <div>
             <strong style="color: var(--text-main); font-size: 1rem;">2. 50% Balance Rule</strong>
             <p style="color: var(--text-muted); margin-top: 2px;">Each row and each column must contain exactly equal numbers of ✕ and ◯ (e.g. 7 Crosses and 7 Noughts on a 14×14 board).</p>
@@ -220,7 +219,7 @@ export class ModalManager {
         </div>
 
         <div style="display: flex; gap: 14px; align-items: flex-start;">
-          <div style="font-size: 1.8rem; line-height: 1;">🚫</div>
+          <div style="font-size: 1.1rem; line-height: 1.6; font-weight: 900; letter-spacing: 1px; color: var(--accent-danger); text-decoration: line-through;">✕✕✕</div>
           <div>
             <strong style="color: var(--text-main); font-size: 1rem;">3. No Three-in-a-Row</strong>
             <p style="color: var(--text-muted); margin-top: 2px;">Never allow three identical symbols consecutively horizontally or vertically (e.g. no ✕✕✕ or ◯◯◯).</p>
@@ -244,7 +243,7 @@ export class ModalManager {
         </div>
 
         <div style="background: var(--bg-surface-elevated); padding: 14px; border-radius: 14px; border: 1px solid var(--border-subtle); margin-top: 4px;">
-          <strong style="color: var(--accent-hint); font-size: 0.95rem;">💡 Pro Solving Strategy:</strong>
+          <strong style="color: var(--accent-hint); font-size: 0.95rem;">Pro Solving Strategy:</strong>
           <ul style="color: var(--text-muted); margin-left: 18px; margin-top: 6px; font-size: 0.85rem; line-height: 1.6;">
             <li><strong>Cap Pairs:</strong> If you see ✕✕, cap both ends with ◯ (◯✕✕◯).</li>
             <li><strong>Sandwich:</strong> If you see ✕_✕, the middle must be ◯ (✕◯✕).</li>
@@ -272,7 +271,7 @@ export class ModalManager {
 
     this.content.innerHTML = `
       <div class="modal-header">
-        <h2 class="modal-title">🏆 Player Statistics</h2>
+        <h2 class="modal-title">Player Statistics</h2>
         <button class="modal-close-btn" id="modal-close">${ICONS.CLOSE}</button>
       </div>
 
@@ -317,7 +316,7 @@ export class ModalManager {
                   <td style="padding: 10px 14px; font-weight: 700;" class="diff-${d.toLowerCase().replace(/\s+/g, '-')}">${d}</td>
                   <td style="padding: 10px 14px; font-family: var(--font-mono);">${item.bestTimeMs ? this.formatTime(Math.floor(item.bestTimeMs / 1000)) : '—'}</td>
                   <td style="padding: 10px 14px;">${item.won} / ${item.played}</td>
-                  <td style="padding: 10px 14px;">${item.currentStreak} 🔥</td>
+                  <td style="padding: 10px 14px;">${item.currentStreak}</td>
                 </tr>
               `;
             }).join('')}
@@ -342,7 +341,7 @@ export class ModalManager {
 
     this.content.innerHTML = `
       <div class="modal-header">
-        <h2 class="modal-title">🔗 Share Challenge</h2>
+        <h2 class="modal-title">Share Challenge</h2>
         <button class="modal-close-btn" id="modal-close">${ICONS.CLOSE}</button>
       </div>
 
@@ -365,8 +364,8 @@ export class ModalManager {
           </div>
         </div>
 
-        <button id="btn-copy-link" class="btn-primary" style="margin-bottom: 10px; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);">🔗 Copy Share Link</button>
-        <button id="btn-copy-share" class="btn-primary" style="margin-bottom: 10px;">📋 Copy Share Card</button>
+        <button id="btn-copy-link" class="btn-primary" style="margin-bottom: 10px; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);">Copy Share Link</button>
+        <button id="btn-copy-share" class="btn-primary" style="margin-bottom: 10px;">Copy Share Card</button>
         <div id="copy-status" style="text-align: center; font-size: 0.85rem; color: var(--accent-success); height: 20px;"></div>
       </div>
     `;
@@ -407,7 +406,7 @@ export class ModalManager {
 
     this.content.innerHTML = `
       <div style="text-align: center; padding: 20px 10px;">
-        <div style="font-size: 4rem; margin-bottom: 10px; animation: pop-in 0.3s ease;">🎉</div>
+        <div class="victory-mark" aria-hidden="true">${ICONS.TROPHY}</div>
         <h2 style="font-size: 1.8rem; font-weight: 800; margin-bottom: 6px;">Puzzle Solved!</h2>
         <p style="color: var(--text-muted); font-size: 0.95rem; margin-bottom: 24px;">
           Brilliant deduction! Every row and column is perfectly balanced.
@@ -430,10 +429,10 @@ export class ModalManager {
 
         <div style="display: flex; flex-direction: column; gap: 10px;">
           <button id="btn-victory-share" class="btn-primary" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
-            📋 Share Result
+            Share Result
           </button>
           <button id="btn-victory-next" class="btn-primary">
-            ✨ Play Another Puzzle
+            Play Another Puzzle
           </button>
           <button id="btn-victory-close" class="meta-pill" style="justify-content: center; width: 100%; padding: 12px; margin-top: 4px;">
             Review Board
@@ -488,11 +487,11 @@ export class ModalManager {
       const px = cellPx();
       this.content.innerHTML = `
       <div class="modal-header">
-        <h2 class="modal-title">🧩 Custom Puzzle</h2>
+        <h2 class="modal-title">Custom Puzzle</h2>
         <button class="modal-close-btn" id="modal-close">${ICONS.CLOSE}</button>
       </div>
       <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 12px;">
-        Paint Dogs/Cats, then tap the small dots between cells to cycle clues: none → = → ×.
+        Paint Crosses/Noughts, then tap the small dots between cells to cycle clues: none → = → ×.
         Your setup must have <strong>exactly one solution</strong>.
       </p>
       <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px;">
@@ -544,7 +543,7 @@ export class ModalManager {
       ${errorMsg ? `<div style="color: var(--accent-danger); font-size: 0.85rem; margin-top: 10px;">⚠ ${errorMsg}</div>` : ''}
       <div style="display: flex; gap: 10px; margin-top: 14px;">
         <button id="btn-custom-clear" class="meta-pill" style="flex: 1; justify-content: center; padding: 12px;">Clear</button>
-        <button id="btn-custom-surprise" class="meta-pill" style="flex: 1; justify-content: center; padding: 12px;">🎲 Starter</button>
+        <button id="btn-custom-surprise" class="meta-pill" style="flex: 1; justify-content: center; padding: 12px;">Starter</button>
         <button id="btn-custom-play" class="btn-primary" style="flex: 2;">Validate & Play</button>
       </div>
       `;
