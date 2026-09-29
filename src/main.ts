@@ -2,7 +2,7 @@ import { GameState } from './state/game-state';
 import { ViewportManager, cellPixelSize } from './ui/viewport';
 import { ModalManager } from './ui/modals';
 import { ICONS } from './ui/icons';
-import { CellValue, EdgeClue, BoardSize, Difficulty } from './types/puzzle';
+import { CellValue, CellValueType, EdgeClue, BoardSize, Difficulty } from './types/puzzle';
 
 // Initialize Game State
 const state = new GameState();
@@ -101,6 +101,85 @@ function lineHeader(
   return { text: '', cls: '' };
 }
 
+/**
+ * Per-cell view model. Everything that can change a cell's appearance lives
+ * here, so a render can compare against the previous frame and touch only the
+ * cells that actually moved.
+ */
+interface CellView {
+  val: CellValueType;
+  isGiven: boolean;
+  isSelected: boolean;
+  isRelated: boolean;
+  isConflict: boolean;
+  hint: '' | 'p' | 's' | 'c';
+}
+
+function cellSignature(v: CellView): string {
+  return `${v.val}${v.isGiven ? 'g' : ''}${v.isSelected ? 'S' : ''}${v.isRelated ? 'R' : ''}${v.isConflict ? 'E' : ''}${v.hint}`;
+}
+
+function cellClassName(v: CellView): string {
+  return [
+    'board-cell',
+    v.isGiven ? 'is-given' : '',
+    v.isSelected ? 'is-selected' : '',
+    v.isRelated && !v.isSelected ? 'is-related' : '',
+    v.isConflict ? 'is-error' : '',
+    v.hint === 'p' ? 'is-hint-primary' : '',
+    v.hint === 's' ? 'is-hint-secondary' : '',
+    v.hint === 'c' ? 'is-hint-clue' : ''
+  ].filter(Boolean).join(' ');
+}
+
+function cellAriaLabel(r: number, c: number, v: CellView): string {
+  const name = v.val === CellValue.DOG ? 'Cross' : v.val === CellValue.CAT ? 'Nought' : 'empty';
+  return [
+    `Row ${r + 1}, column ${c + 1}`,
+    name,
+    v.isGiven ? 'given' : '',
+    v.isConflict ? 'rule conflict' : ''
+  ].filter(Boolean).join(', ');
+}
+
+function markHtml(val: CellValueType): string {
+  if (val === CellValue.DOG) return `<div class="cell-pet-container cell-dog">${ICONS.DOG}</div>`;
+  if (val === CellValue.CAT) return `<div class="cell-pet-container cell-cat">${ICONS.CAT}</div>`;
+  return '';
+}
+
+// Previous frame, so renderBoard can patch instead of rebuilding. Reset to
+// null whenever the board's identity or geometry changes.
+let lastSignatures: string[][] | null = null;
+let lastBoardKey = '';
+let lastHeaderText: string[] = [];
+// Node caches captured at build time so a patch never re-queries the DOM.
+let cellNodes: HTMLElement[][] = [];
+let headerNodes: HTMLElement[] = [];
+let lastSelKey = '';
+
+/** One delegated listener pair for the whole grid, attached once. */
+function bindBoardEvents(): void {
+  boardWrapper.addEventListener('click', (e) => {
+    const td = (e.target as HTMLElement).closest<HTMLElement>('.board-cell');
+    if (!td) return;
+    e.stopPropagation();
+    const r = Number(td.dataset.r);
+    const c = Number(td.dataset.c);
+    const sel = state.selectedCell;
+    // Clicking the already-selected cell cycles it; otherwise just select.
+    if (sel && sel.r === r && sel.c === c) state.cycleCellValue(r, c);
+    else state.selectCell(r, c);
+  });
+
+  boardWrapper.addEventListener('contextmenu', (e) => {
+    const td = (e.target as HTMLElement).closest<HTMLElement>('.board-cell');
+    if (!td) return;
+    e.preventDefault();
+    state.setCellValue(Number(td.dataset.r), Number(td.dataset.c), CellValue.EMPTY);
+  });
+}
+
 // Render Board & Grid
 function renderBoard(): void {
   const puzzle = state.puzzle;
@@ -149,110 +228,108 @@ function renderBoard(): void {
     }
   }
 
+  // Build this frame's view model once; both paths below read from it.
+  const views: CellView[][] = [];
+  for (let r = 0; r < size; r++) {
+    const row: CellView[] = [];
+    for (let c = 0; c < size; c++) {
+      const key = `${r},${c}`;
+      row.push({
+        val: currentGrid[r][c],
+        isGiven: state.isCellGiven(r, c),
+        isSelected: r === selectedR && c === selectedC,
+        isRelated: state.settings.highlightRelated && (r === selectedR || c === selectedC),
+        isConflict: state.settings.autoCheckMistakes && conflicts.has(key),
+        hint: key === hintPrimary ? 'p' : hintSecondaries.has(key) ? 's' : hintClues.has(key) ? 'c' : ''
+      });
+    }
+    views.push(row);
+  }
+
+  const headerTexts: string[] = [];
+  for (let c = 0; c < size; c++) {
+    const h = lineHeader(colDogCounts[c], colCatCounts[c], half, c === selectedC);
+    headerTexts.push(`c${c}|${h.cls}|${h.text}|${colDogCounts[c]},${colCatCounts[c]}`);
+  }
+  for (let r = 0; r < size; r++) {
+    const h = lineHeader(rowDogCounts[r], rowCatCounts[r], half, r === selectedR);
+    headerTexts.push(`r${r}|${h.cls}|${h.text}|${rowDogCounts[r]},${rowCatCounts[r]}`);
+  }
+
+  // A full rebuild is only needed when the board's identity or geometry
+  // changes. Everything else is a patch, so a move touches a handful of nodes
+  // instead of throwing away and re-creating the entire grid.
+  const boardKey = `${puzzle.id}|${size}|${cellSize}`;
+  const needsFullBuild = boardKey !== lastBoardKey || lastSignatures === null;
+
+  if (needsFullBuild) {
+    buildBoard(views, headerTexts, size, half, cellSize, puzzle);
+    lastBoardKey = boardKey;
+  } else {
+    patchBoard(views, headerTexts, size);
+  }
+
+  lastSignatures = views.map(row => row.map(cellSignature));
+  lastHeaderText = headerTexts;
+}
+
+/** Full DOM construction — runs once per puzzle, not per move. */
+function buildBoard(
+  views: CellView[][],
+  headerTexts: string[],
+  size: number,
+  half: number,
+  cellSize: number,
+  puzzle: typeof state.puzzle
+): void {
   let html = `<table class="grid-table" role="grid" aria-label="Tango puzzle board, ${size} by ${size}. Use arrow keys to move, X or O to place.">`;
 
-  // 1. Column Header Row (Counters)
   html += `<tr role="row"><th class="row-header-cell"></th>`;
   for (let c = 0; c < size; c++) {
-    const dCount = colDogCounts[c];
-    const cCount = colCatCounts[c];
-    const head = lineHeader(dCount, cCount, half, c === selectedC);
-
-    html += `
-      <th class="col-header-cell" role="columnheader" style="width: ${cellSize}px;"
-          aria-label="Column ${c + 1}: ${dCount} crosses, ${cCount} noughts of ${half} each">
-        <div class="line-counter ${head.cls}" aria-hidden="true">${head.text}</div>
-      </th>
-    `;
+    const [, cls, text, counts] = headerTexts[c].split('|');
+    const [x, o] = counts.split(',');
+    html += `<th class="col-header-cell" role="columnheader" data-ch="${c}" style="width: ${cellSize}px;"
+          aria-label="Column ${c + 1}: ${x} crosses, ${o} noughts of ${half} each">
+        <div class="line-counter ${cls}" aria-hidden="true">${text}</div>
+      </th>`;
   }
   html += `</tr>`;
 
-  // 2. Grid Rows
   for (let r = 0; r < size; r++) {
-    const rDCount = rowDogCounts[r];
-    const rCCount = rowCatCounts[r];
-    const rHead = lineHeader(rDCount, rCCount, half, r === selectedR);
-
+    const [, cls, text, counts] = headerTexts[size + r].split('|');
+    const [x, o] = counts.split(',');
     html += `<tr role="row">`;
-    // Row Header Counter
-    html += `
-      <th class="row-header-cell" role="rowheader"
-          aria-label="Row ${r + 1}: ${rDCount} crosses, ${rCCount} noughts of ${half} each">
-        <div class="line-counter ${rHead.cls}" aria-hidden="true">${rHead.text}</div>
-      </th>
-    `;
+    html += `<th class="row-header-cell" role="rowheader" data-rh="${r}"
+          aria-label="Row ${r + 1}: ${x} crosses, ${o} noughts of ${half} each">
+        <div class="line-counter ${cls}" aria-hidden="true">${text}</div>
+      </th>`;
 
     for (let c = 0; c < size; c++) {
-      const val = currentGrid[r][c];
-      const isGiven = state.isCellGiven(r, c);
-      const isSelected = r === selectedR && c === selectedC;
-      const isRelated = state.settings.highlightRelated && (r === selectedR || c === selectedC);
-      const key = `${r},${c}`;
-      const isConflict = state.settings.autoCheckMistakes && conflicts.has(key);
+      const v = views[r][c];
+      html += `<td class="${cellClassName(v)}" role="gridcell" data-r="${r}" data-c="${c}"
+            tabindex="${v.isSelected ? 0 : -1}"
+            aria-label="${cellAriaLabel(r, c, v)}"
+            aria-selected="${v.isSelected}"
+            ${v.isGiven ? 'aria-readonly="true"' : ''}
+            ${v.isConflict ? 'aria-invalid="true"' : ''}
+            style="width: ${cellSize}px; height: ${cellSize}px;">`;
 
-      const isHP = key === hintPrimary;
-      const isHS = hintSecondaries.has(key);
-      const isHC = hintClues.has(key);
+      html += markHtml(v.val);
 
-      // No 4-cell subgrid lines and no 2x2 banding: Tango has no sub-blocks,
-      // so those only drew structure the rules don't have.
-      const cellClasses = [
-        'board-cell',
-        isGiven ? 'is-given' : '',
-        isSelected ? 'is-selected' : '',
-        isRelated && !isSelected ? 'is-related' : '',
-        isConflict ? 'is-error' : '',
-        isHP ? 'is-hint-primary' : '',
-        isHS ? 'is-hint-secondary' : '',
-        isHC ? 'is-hint-clue' : ''
-      ].filter(Boolean).join(' ');
-
-      const valName = val === CellValue.DOG ? 'Cross' : val === CellValue.CAT ? 'Nought' : 'empty';
-      const cellLabel = [
-        `Row ${r + 1}, column ${c + 1}`,
-        valName,
-        isGiven ? 'given' : '',
-        isConflict ? 'rule conflict' : ''
-      ].filter(Boolean).join(', ');
-
-      html += `
-        <td class="${cellClasses}"
-            role="gridcell"
-            data-r="${r}"
-            data-c="${c}"
-            tabindex="${isSelected ? 0 : -1}"
-            aria-label="${cellLabel}"
-            aria-selected="${isSelected}"
-            ${isGiven ? 'aria-readonly="true"' : ''}
-            ${isConflict ? 'aria-invalid="true"' : ''}
-            style="width: ${cellSize}px; height: ${cellSize}px;"
-        >
-      `;
-
-      // Render Pet Icon if filled
-      if (val === CellValue.DOG) {
-        html += `<div class="cell-pet-container cell-dog">${ICONS.DOG}</div>`;
-      } else if (val === CellValue.CAT) {
-        html += `<div class="cell-pet-container cell-cat">${ICONS.CAT}</div>`;
-      }
-
-      // Horizontal Edge Clue to the right (between (r, c) and (r, c + 1))
+      // Edge clues are fixed for the life of the puzzle, so they are only ever
+      // written here and never touched by a patch.
       if (c < size - 1) {
         const hClue = puzzle.hClues[r][c];
-        if (hClue === EdgeClue.EQUAL) {
-          html += `<div class="clue-h-wrapper"><div class="edge-clue-badge badge-equal">${ICONS.EQUAL}</div></div>`;
-        } else if (hClue === EdgeClue.CROSS) {
-          html += `<div class="clue-h-wrapper"><div class="edge-clue-badge badge-cross">${ICONS.CROSS}</div></div>`;
+        if (hClue !== EdgeClue.NONE) {
+          const kind = hClue === EdgeClue.EQUAL ? ['badge-equal', ICONS.EQUAL] : ['badge-cross', ICONS.CROSS];
+          html += `<div class="clue-h-wrapper"><div class="edge-clue-badge ${kind[0]}">${kind[1]}</div></div>`;
         }
       }
-
-      // Vertical Edge Clue to the bottom (between (r, c) and (r + 1, c))
       if (r < size - 1) {
         const vClue = puzzle.vClues[r][c];
-        if (vClue === EdgeClue.EQUAL) {
-          html += `<div class="clue-v-wrapper"><div class="edge-clue-badge badge-equal">${ICONS.EQUAL}</div></div>`;
-        } else if (vClue === EdgeClue.CROSS) {
-          html += `<div class="clue-v-wrapper"><div class="edge-clue-badge badge-cross">${ICONS.CROSS}</div></div>`;
+        if (vClue !== EdgeClue.NONE) {
+          const kind = vClue === EdgeClue.EQUAL ? ['badge-equal', ICONS.EQUAL] : ['badge-cross', ICONS.CROSS];
+          html += `<div class="clue-v-wrapper"><div class="edge-clue-badge ${kind[0]}">${kind[1]}</div></div>`;
         }
       }
 
@@ -262,41 +339,109 @@ function renderBoard(): void {
   }
   html += `</table>`;
 
-  // Capture focus ownership BEFORE the DOM is replaced.
-  const boardHadFocus = boardWrapper.contains(document.activeElement);
-
+  const hadFocus = boardWrapper.contains(document.activeElement);
   boardWrapper.innerHTML = html;
 
-  // Bind Cell Clicks
-  boardWrapper.querySelectorAll('.board-cell').forEach(el => {
-    el.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const r = Number(el.getAttribute('data-r'));
-      const c = Number(el.getAttribute('data-c'));
-      state.selectCell(r, c);
-
-      // Double-click or single click cycles if cell was already selected
-      if (selectedR === r && selectedC === c) {
-        state.cycleCellValue(r, c);
-      }
-    });
-
-    // Right click erases or cycles backward
-    el.addEventListener('contextmenu', (e) => {
-      e.preventDefault();
-      const r = Number(el.getAttribute('data-r'));
-      const c = Number(el.getAttribute('data-c'));
-      state.setCellValue(r, c, CellValue.EMPTY);
-    });
-  });
-
-  // Roving tabindex: the board is rebuilt on every change, so re-focus the
-  // selected cell when focus was inside the grid — otherwise keyboard users
-  // get dumped back to the top of the document on each move.
-  if (boardHadFocus) {
-    const sel = boardWrapper.querySelector<HTMLElement>('.board-cell[tabindex="0"]');
-    sel?.focus({ preventScroll: true });
+  // Cache node references once; patches index into these instead of querying.
+  cellNodes = [];
+  for (let r = 0; r < size; r++) {
+    const row: HTMLElement[] = [];
+    for (let c = 0; c < size; c++) {
+      row.push(boardWrapper.querySelector<HTMLElement>(`.board-cell[data-r="${r}"][data-c="${c}"]`)!);
+    }
+    cellNodes.push(row);
   }
+  headerNodes = [];
+  for (let c = 0; c < size; c++) {
+    headerNodes.push(boardWrapper.querySelector<HTMLElement>(`th[data-ch="${c}"]`)!);
+  }
+  for (let r = 0; r < size; r++) {
+    headerNodes.push(boardWrapper.querySelector<HTMLElement>(`th[data-rh="${r}"]`)!);
+  }
+
+  if (hadFocus) {
+    boardWrapper.querySelector<HTMLElement>('.board-cell[tabindex="0"]')?.focus({ preventScroll: true });
+  }
+}
+
+/** Updates only the cells and headers whose appearance actually changed. */
+function patchBoard(views: CellView[][], headerTexts: string[], size: number): void {
+  const prev = lastSignatures!;
+  const focusWasInGrid = boardWrapper.contains(document.activeElement);
+  let newlySelected: HTMLElement | null = null;
+
+  for (let r = 0; r < size; r++) {
+    for (let c = 0; c < size; c++) {
+      const v = views[r][c];
+      const sig = cellSignature(v);
+      if (sig === prev[r][c]) continue;
+
+      const td = cellNodes[r]?.[c];
+      if (!td) continue;
+
+      td.className = cellClassName(v);
+      td.setAttribute('aria-label', cellAriaLabel(r, c, v));
+      td.setAttribute('aria-selected', String(v.isSelected));
+      td.tabIndex = v.isSelected ? 0 : -1;
+      if (v.isConflict) td.setAttribute('aria-invalid', 'true');
+      else td.removeAttribute('aria-invalid');
+      if (v.isSelected) newlySelected = td;
+
+      // Only rewrite the mark when the value itself changed, so the pop-in
+      // animation plays on a real placement and not on a mere reselection.
+      const prevVal = Number(prev[r][c][0]) as CellValueType;
+      if (prevVal !== v.val) {
+        td.querySelector(':scope > .cell-pet-container')?.remove();
+        const mark = markHtml(v.val);
+        if (mark) td.insertAdjacentHTML('afterbegin', mark);
+      }
+    }
+  }
+
+  for (let i = 0; i < headerTexts.length; i++) {
+    if (headerTexts[i] === lastHeaderText[i]) continue;
+    const [id, cls, text, counts] = headerTexts[i].split('|');
+    const isCol = id[0] === 'c';
+    const idx = id.slice(1);
+    const th = headerNodes[i];
+    if (!th) continue;
+    const [x, o] = counts.split(',');
+    const n = Number(idx) + 1;
+    th.setAttribute(
+      'aria-label',
+      isCol
+        ? `Column ${n}: ${x} crosses, ${o} noughts of ${size / 2} each`
+        : `Row ${n}: ${x} crosses, ${o} noughts of ${size / 2} each`
+    );
+    const counter = th.querySelector<HTMLElement>('.line-counter');
+    if (counter) {
+      counter.className = `line-counter ${cls}`.trim();
+      counter.textContent = text;
+    }
+  }
+
+  // Roving tabindex: keep focus on the selected cell as it moves.
+  if (focusWasInGrid && newlySelected && document.activeElement !== newlySelected) {
+    newlySelected.focus({ preventScroll: true });
+  }
+  // Keep the selected cell reachable when the board is zoomed past the
+  // viewport — otherwise arrow keys walk the selection off-screen. Only when
+  // the selection actually moved, and deferred to the next frame: reading
+  // rects straight after mutating the grid would force a synchronous reflow on
+  // every keystroke.
+  if (newlySelected) scheduleReveal(newlySelected);
+}
+
+let revealHandle = 0;
+function scheduleReveal(el: HTMLElement): void {
+  const key = `${el.dataset.r},${el.dataset.c}`;
+  if (key === lastSelKey) return;
+  lastSelKey = key;
+  if (revealHandle) cancelAnimationFrame(revealHandle);
+  revealHandle = requestAnimationFrame(() => {
+    revealHandle = 0;
+    viewport.revealCell(el);
+  });
 }
 
 // Lightweight timer refresh — runs every second WITHOUT rebuilding the board.
@@ -625,6 +770,7 @@ function setupEvents(): void {
 
 // Initialize Application
 mountIcons();
+bindBoardEvents();
 setupEvents();
 state.subscribe(updateUI);
 state.subscribeTick(renderTimer);
