@@ -48,15 +48,24 @@ export class ViewportManager {
   }
 
   private bindEvents(): void {
-    // Mouse Wheel Zooming
+    // Wheel zoom — only with Ctrl/Cmd held, matching the canvas convention
+    // (Figma/Miro) and the browser's own zoom gesture. A bare wheel event must
+    // NOT resize the board: trackpad two-finger scrolling fires constantly and
+    // would rescale the puzzle by accident, and swallowing every wheel event
+    // also blocked the reader's own Ctrl+wheel page zoom.
+    // Trackpad pinch arrives here as ctrlKey too, so pinch-to-zoom still works.
     this.container.addEventListener('wheel', (e: WheelEvent) => {
+      if (!e.ctrlKey && !e.metaKey) return; // let the page keep its default
+
       e.preventDefault();
       const rect = this.container.getBoundingClientRect();
       const mouseX = e.clientX - rect.left;
       const mouseY = e.clientY - rect.top;
 
-      const zoomFactor = e.deltaY < 0 ? 1.12 : 0.89;
-      this.zoomAt(mouseX, mouseY, zoomFactor);
+      // Pinch gestures report small deltas; scale the step so both feel right.
+      const step = Math.min(Math.abs(e.deltaY), 50) / 50;
+      const factor = e.deltaY < 0 ? 1 + 0.12 * step : 1 - 0.11 * step;
+      this.zoomAt(mouseX, mouseY, factor);
     }, { passive: false });
 
     // Mouse Pan Dragging
