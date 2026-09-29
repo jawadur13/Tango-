@@ -213,24 +213,28 @@ export class ViewportManager {
     this.applyTransform();
   }
 
-  public ensureCellVisible(r: number, c: number, _boardSize: number, cellSize: number): void {
-    const containerRect = this.container.getBoundingClientRect();
-    const cellCenterX = this.panX + (c + 0.5) * cellSize * this.scale + containerRect.width / 2;
-    const cellCenterY = this.panY + (r + 0.5) * cellSize * this.scale + containerRect.height / 2;
+  /**
+   * Pans just enough to bring a cell fully inside the viewport. Measured from
+   * real rects rather than derived from cell arithmetic, so it accounts for the
+   * board padding, the row-header column and the current zoom without having to
+   * model any of them. No-op when the cell is already comfortably in view, so
+   * ordinary play never causes the board to drift.
+   */
+  public revealCell(el: HTMLElement, margin = 24): void {
+    const view = this.container.getBoundingClientRect();
+    const cell = el.getBoundingClientRect();
 
-    const margin = 50;
-    if (cellCenterX < margin) {
-      this.panX += margin - cellCenterX;
-    } else if (cellCenterX > containerRect.width - margin) {
-      this.panX -= cellCenterX - (containerRect.width - margin);
-    }
+    let dx = 0;
+    let dy = 0;
+    if (cell.left < view.left + margin) dx = view.left + margin - cell.left;
+    else if (cell.right > view.right - margin) dx = view.right - margin - cell.right;
 
-    if (cellCenterY < margin) {
-      this.panY += margin - cellCenterY;
-    } else if (cellCenterY > containerRect.height - margin) {
-      this.panY -= cellCenterY - (containerRect.height - margin);
-    }
+    if (cell.top < view.top + margin) dy = view.top + margin - cell.top;
+    else if (cell.bottom > view.bottom - margin) dy = view.bottom - margin - cell.bottom;
 
+    if (dx === 0 && dy === 0) return;
+    this.panX += dx;
+    this.panY += dy;
     this.applyTransform();
   }
 
