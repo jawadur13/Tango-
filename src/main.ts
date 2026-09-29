@@ -63,6 +63,7 @@ function mountIcons(): void {
   document.getElementById('fit-view-icon')!.innerHTML = ICONS.FIT_VIEW;
 
   document.getElementById('close-hint-icon')!.innerHTML = ICONS.CLOSE;
+  document.getElementById('hint-banner-icon')!.innerHTML = ICONS.HINT;
 
   document.getElementById('daily-icon')!.innerHTML = ICONS.DAILY;
   document.getElementById('stats-icon')!.innerHTML = ICONS.STATS;
@@ -75,6 +76,29 @@ function formatTime(totalSec: number): string {
   const m = Math.floor(totalSec / 60);
   const s = totalSec % 60;
   return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+}
+
+/**
+ * Decides what a row/column header shows.
+ *
+ * Printing "✕6 ◯6" beside all 2N lines turns a 24×24 board into a wall of
+ * unreadable digits (they render ~5px once the board is zoomed to fit). So the
+ * header stays empty while a line is simply in progress, and speaks up only
+ * when it has something to say: a tick when the line is correctly balanced,
+ * the counts when the line is broken or is the one you're working in.
+ * Screen readers still get the full counts from the header's aria-label.
+ */
+function lineHeader(
+  xCount: number,
+  oCount: number,
+  half: number,
+  isActive: boolean
+): { text: string; cls: string } {
+  const counts = `✕${xCount} ◯${oCount}`;
+  if (xCount > half || oCount > half) return { text: counts, cls: 'counter-overflow' };
+  if (xCount === half && oCount === half) return { text: '✓', cls: 'counter-balanced' };
+  if (isActive) return { text: counts, cls: 'counter-active' };
+  return { text: '', cls: '' };
 }
 
 // Render Board & Grid
@@ -131,17 +155,12 @@ function renderBoard(): void {
   for (let c = 0; c < size; c++) {
     const dCount = colDogCounts[c];
     const cCount = colCatCounts[c];
-    const isOver = dCount > half || cCount > half;
-    const isBal = dCount === half && cCount === half;
-    const badgeClass = isOver ? 'counter-overflow' : isBal ? 'counter-balanced' : '';
+    const head = lineHeader(dCount, cCount, half, c === selectedC);
 
     html += `
       <th class="col-header-cell" role="columnheader" style="width: ${cellSize}px;"
           aria-label="Column ${c + 1}: ${dCount} crosses, ${cCount} noughts of ${half} each">
-        <div class="col-header-counter ${badgeClass}" aria-hidden="true">
-          <span>✕${dCount}</span>
-          <span>◯${cCount}</span>
-        </div>
+        <div class="line-counter ${head.cls}" aria-hidden="true">${head.text}</div>
       </th>
     `;
   }
@@ -151,19 +170,14 @@ function renderBoard(): void {
   for (let r = 0; r < size; r++) {
     const rDCount = rowDogCounts[r];
     const rCCount = rowCatCounts[r];
-    const rOver = rDCount > half || rCCount > half;
-    const rBal = rDCount === half && rCCount === half;
-    const rBadgeClass = rOver ? 'counter-overflow' : rBal ? 'counter-balanced' : '';
+    const rHead = lineHeader(rDCount, rCCount, half, r === selectedR);
 
     html += `<tr role="row">`;
     // Row Header Counter
     html += `
       <th class="row-header-cell" role="rowheader"
           aria-label="Row ${r + 1}: ${rDCount} crosses, ${rCCount} noughts of ${half} each">
-        <div class="row-header-counter ${rBadgeClass}" aria-hidden="true">
-          <span>✕${rDCount}</span>
-          <span>◯${rCCount}</span>
-        </div>
+        <div class="line-counter ${rHead.cls}" aria-hidden="true">${rHead.text}</div>
       </th>
     `;
 
@@ -179,16 +193,10 @@ function renderBoard(): void {
       const isHS = hintSecondaries.has(key);
       const isHC = hintClues.has(key);
 
-      // Subgrid styling every 4 cells
-      const subgridRight = (c + 1) % 4 === 0 && c < size - 1 ? 'subgrid-right' : '';
-      const subgridBottom = (r + 1) % 4 === 0 && r < size - 1 ? 'subgrid-bottom' : '';
-      const bandAlt = (Math.floor(r / 2) + Math.floor(c / 2)) % 2 === 1 ? 'band-alt' : '';
-
+      // No 4-cell subgrid lines and no 2x2 banding: Tango has no sub-blocks,
+      // so those only drew structure the rules don't have.
       const cellClasses = [
         'board-cell',
-        subgridRight,
-        subgridBottom,
-        bandAlt,
         isGiven ? 'is-given' : '',
         isSelected ? 'is-selected' : '',
         isRelated && !isSelected ? 'is-related' : '',
