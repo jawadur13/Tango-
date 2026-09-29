@@ -62,6 +62,8 @@ function mountIcons(): void {
   document.getElementById('zoom-out-icon')!.innerHTML = ICONS.ZOOM_OUT;
   document.getElementById('fit-view-icon')!.innerHTML = ICONS.FIT_VIEW;
 
+  document.getElementById('close-hint-icon')!.innerHTML = ICONS.CLOSE;
+
   document.getElementById('daily-icon')!.innerHTML = ICONS.DAILY;
   document.getElementById('stats-icon')!.innerHTML = ICONS.STATS;
   document.getElementById('rules-icon')!.innerHTML = ICONS.HELP;
@@ -122,10 +124,10 @@ function renderBoard(): void {
     }
   }
 
-  let html = `<table class="grid-table">`;
+  let html = `<table class="grid-table" role="grid" aria-label="Tango puzzle board, ${size} by ${size}. Use arrow keys to move, X or O to place.">`;
 
   // 1. Column Header Row (Counters)
-  html += `<tr><th class="row-header-cell"></th>`;
+  html += `<tr role="row"><th class="row-header-cell"></th>`;
   for (let c = 0; c < size; c++) {
     const dCount = colDogCounts[c];
     const cCount = colCatCounts[c];
@@ -134,8 +136,9 @@ function renderBoard(): void {
     const badgeClass = isOver ? 'counter-overflow' : isBal ? 'counter-balanced' : '';
 
     html += `
-      <th class="col-header-cell" style="width: ${cellSize}px;">
-        <div class="col-header-counter ${badgeClass}">
+      <th class="col-header-cell" role="columnheader" style="width: ${cellSize}px;"
+          aria-label="Column ${c + 1}: ${dCount} crosses, ${cCount} noughts of ${half} each">
+        <div class="col-header-counter ${badgeClass}" aria-hidden="true">
           <span>✕${dCount}</span>
           <span>◯${cCount}</span>
         </div>
@@ -152,11 +155,12 @@ function renderBoard(): void {
     const rBal = rDCount === half && rCCount === half;
     const rBadgeClass = rOver ? 'counter-overflow' : rBal ? 'counter-balanced' : '';
 
-    html += `<tr>`;
+    html += `<tr role="row">`;
     // Row Header Counter
     html += `
-      <th class="row-header-cell">
-        <div class="row-header-counter ${rBadgeClass}">
+      <th class="row-header-cell" role="rowheader"
+          aria-label="Row ${r + 1}: ${rDCount} crosses, ${rCCount} noughts of ${half} each">
+        <div class="row-header-counter ${rBadgeClass}" aria-hidden="true">
           <span>✕${rDCount}</span>
           <span>◯${rCCount}</span>
         </div>
@@ -194,10 +198,24 @@ function renderBoard(): void {
         isHC ? 'is-hint-clue' : ''
       ].filter(Boolean).join(' ');
 
+      const valName = val === CellValue.DOG ? 'Cross' : val === CellValue.CAT ? 'Nought' : 'empty';
+      const cellLabel = [
+        `Row ${r + 1}, column ${c + 1}`,
+        valName,
+        isGiven ? 'given' : '',
+        isConflict ? 'rule conflict' : ''
+      ].filter(Boolean).join(', ');
+
       html += `
         <td class="${cellClasses}"
+            role="gridcell"
             data-r="${r}"
             data-c="${c}"
+            tabindex="${isSelected ? 0 : -1}"
+            aria-label="${cellLabel}"
+            aria-selected="${isSelected}"
+            ${isGiven ? 'aria-readonly="true"' : ''}
+            ${isConflict ? 'aria-invalid="true"' : ''}
             style="width: ${cellSize}px; height: ${cellSize}px;"
         >
       `;
@@ -235,6 +253,9 @@ function renderBoard(): void {
   }
   html += `</table>`;
 
+  // Capture focus ownership BEFORE the DOM is replaced.
+  const boardHadFocus = boardWrapper.contains(document.activeElement);
+
   boardWrapper.innerHTML = html;
 
   // Bind Cell Clicks
@@ -259,13 +280,37 @@ function renderBoard(): void {
       state.setCellValue(r, c, CellValue.EMPTY);
     });
   });
+
+  // Roving tabindex: the board is rebuilt on every change, so re-focus the
+  // selected cell when focus was inside the grid — otherwise keyboard users
+  // get dumped back to the top of the document on each move.
+  if (boardHadFocus) {
+    const sel = boardWrapper.querySelector<HTMLElement>('.board-cell[tabindex="0"]');
+    sel?.focus({ preventScroll: true });
+  }
 }
 
 // Lightweight timer refresh — runs every second WITHOUT rebuilding the board.
 function renderTimer(): void {
   timerDisplay.textContent = formatTime(state.elapsedSeconds);
-  timerIcon.textContent = state.isPaused ? '▶' : '⏸';
+  timerIcon.innerHTML = state.isPaused ? ICONS.PLAY : ICONS.PAUSE;
+  const timerBtn = document.getElementById('btn-timer-toggle');
+  timerBtn?.setAttribute('aria-label', state.isPaused ? 'Resume timer' : 'Pause timer');
   pauseOverlay.classList.toggle('hidden', !state.isPaused);
+}
+
+function countFilled(): number {
+  let n = 0;
+  for (const row of state.currentGrid) {
+    for (const v of row) if (v !== CellValue.EMPTY) n++;
+  }
+  return n;
+}
+
+/** Announces board state changes to screen readers (polite live region). */
+function announce(msg: string): void {
+  const region = document.getElementById('sr-status');
+  if (region && region.textContent !== msg) region.textContent = msg;
 }
 
 // Update UI
@@ -287,19 +332,26 @@ function updateUI(): void {
   }
 
   // Timer
-  timerDisplay.textContent = formatTime(state.elapsedSeconds);
-  timerIcon.textContent = state.isPaused ? '▶' : '⏸';
-  pauseOverlay.classList.toggle('hidden', !state.isPaused);
+  renderTimer();
 
-  // Settings
+  // Settings — SVG icons (not emoji) so they render identically everywhere
   document.body.className = `theme-${state.settings.theme}`;
-  themeIcon.textContent = state.settings.theme === 'dark' ? '🌙' : '☀️';
-  soundIcon.textContent = state.settings.soundEnabled ? '🔊' : '🔇';
+  const isDark = state.settings.theme === 'dark';
+  themeIcon.innerHTML = isDark ? ICONS.MOON : ICONS.SUN;
+  document.getElementById('btn-theme-toggle')
+    ?.setAttribute('aria-label', isDark ? 'Switch to light theme' : 'Switch to dark theme');
+
+  soundIcon.innerHTML = state.settings.soundEnabled ? ICONS.SOUND_ON : ICONS.SOUND_OFF;
+  const soundBtn = document.getElementById('btn-sound-toggle');
+  soundBtn?.setAttribute('aria-label', state.settings.soundEnabled ? 'Mute sound' : 'Unmute sound');
+  soundBtn?.setAttribute('aria-pressed', String(state.settings.soundEnabled));
 
   const checkLabel = document.getElementById('label-check-mistakes');
   if (checkLabel) {
     checkLabel.textContent = `Errors: ${state.settings.autoCheckMistakes ? 'ON' : 'OFF'}`;
   }
+  document.getElementById('btn-check-toggle')
+    ?.setAttribute('aria-pressed', String(state.settings.autoCheckMistakes));
 
   // Hint Banner
   if (state.activeHint) {
@@ -312,6 +364,18 @@ function updateUI(): void {
 
   // Render Grid
   renderBoard();
+
+  // Announce board state for screen readers (mistakes are otherwise conveyed
+  // by colour alone, which fails WCAG 1.4.1 Use of Colour).
+  if (state.isGameComplete) {
+    announce(`Puzzle solved in ${formatTime(state.elapsedSeconds)}.`);
+  } else if (state.settings.autoCheckMistakes && state.validation.hasMistakes) {
+    const first = state.validation.mistakes[0];
+    const n = state.validation.mistakes.length;
+    announce(`${n} mistake${n > 1 ? 's' : ''} on the board. ${first.message}`);
+  } else {
+    announce(`${countFilled()} of ${p.size * p.size} cells filled.`);
+  }
 
   // Check victory celebration
   if (state.isGameComplete && !prevIsSolved) {
