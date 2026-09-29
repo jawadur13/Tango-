@@ -73,9 +73,7 @@ body.theme-dark {
   --diff-nightmare: #c084fc;
 
   --grid-line: rgba(255, 255, 255, 0.17);
-  --grid-subline: rgba(255, 255, 255, 0.22);
   --cell-bg: #141d2e;
-  --cell-bg-alt: #172235;
   --cell-given-bg: #0f1624;
   --cell-hover: #1e2d47;
   --cell-selected: rgba(99, 102, 241, 0.25);
@@ -136,9 +134,7 @@ body.theme-light {
   --diff-nightmare: #7e22ce;
 
   --grid-line: rgba(0, 0, 0, 0.15);
-  --grid-subline: rgba(0, 0, 0, 0.22);
   --cell-bg: #ffffff;
-  --cell-bg-alt: #f8fafc;
   --cell-given-bg: #e2e8f0;
   --cell-hover: #e0e7ff;
   --cell-selected: rgba(99, 102, 241, 0.15);
